@@ -1,0 +1,21 @@
+# Herkomst en licentie
+
+De Lua-implementatie, tests, puzzelvoorraad en documentatie van deze plugin vallen onder **AGPL-3.0-or-later**. Copyright © 2026 Doplo plugin contributors. De meegeleverde licentietekst is de ongewijzigde GNU AGPL versie 3. De schermafbeeldingen in het bronproject tonen KOReader met deze plugin. [Licentietekst](LICENSE)
+
+## Spelregels
+
+Küng / Keesing Schweiz beschrijft het klassieke spel in *Doplo Anleitung*. In *Logik-Rätsel für unterwegs*, nummer 1, staan op gedrukte pagina 40 de Plus-regels en voorbeelden. De gedrukte paginanummers wijken af van de PDF-paginanummers. De plugin gebruikt zelfstandig gegenereerde roosters. [Klassieke handleiding](https://www.kueng-raetsel.ch/anleitungen/) · [Doplo Plus, PDF-pagina 13](https://www.kueng-raetsel.ch/hefte/Taschen-Logik-Mix.pdf#page=13)
+
+## Onderzochte software
+
+| Project | Licentie van de geraadpleegde bron | Wat we hebben gebruikt |
+| --- | --- | --- |
+| Sjlver/rublock | MIT | De werkwijze om een geldig rooster te maken, de aanwijzingen af te leiden en uniciteit te controleren. De voortplanting van beperkingen en het tellen van zoekstappen zijn als algoritmische referentie onderzocht. De Lua-solver gebruikt een eigen lijnalgoritme voor beide spelvormen. [Generator](https://github.com/Sjlver/rublock/blob/abbeada0a2f85c1b236e88ad8948b5f436d2a360/src/bin/gen_puzzle.rs) · [Solver](https://github.com/Sjlver/rublock/blob/abbeada0a2f85c1b236e88ad8948b5f436d2a360/src/queue_solver.rs) |
+| SmilingWayne/puzzlekit | MIT | Het constraintmodel van de Skyscraper-solver illustreert randvoorwaarden op een Latijns vierkant. De aparte datasetcatalogus vermeldt DoppelBlock. De release bevat eigen puzzels en werkt zonder OR-Tools of Python. [Solver](https://github.com/SmilingWayne/puzzlekit/blob/9ef8ebbb262039401d72e37af0d23f9c9b46a5b0/src/puzzlekit/solvers/skyscraper.py) · [Datasetcatalogus](https://github.com/SmilingWayne/puzzlekit-dataset) |
+| koreader/koreader | AGPL-3.0 | De geïnstalleerde KOReader-runtime levert de pluginloader, menuregistratie, InputContainer, GestureRange, TextWidget, ButtonDialog, framebuffer, timer, instellingen en bestandssysteemfuncties. De installatie-ZIP bevat alleen de plugin. [Pluginloader](https://github.com/koreader/koreader/blob/v2026.07.1/frontend/pluginloader.lua) · [InputContainer](https://github.com/koreader/koreader/blob/v2026.07.1/frontend/ui/widget/container/inputcontainer.lua) · [Kobo-apparaatdefinities](https://github.com/koreader/koreader/blob/v2026.07.1/frontend/device/kobo/device.lua) |
+| koreader/contrib | AGPL-3.0 voor de verzameling. Submodules hebben hun eigen licentie. | De catalogus toont de zelfstandige pluginmappen voor onder meer 2048, Solitaire en Sudoku. [Catalogus](https://github.com/koreader/contrib/tree/5ed759ec8f59435ae722e8c0d2dadc1171930358) |
+| omer-faruq/nonogram.koplugin | GPL-3.0 | Referentie voor spel vanuit het Tools-menu, bereik van tikgebaren, gerichte e-inkverversingen en aparte spelopslag. Doplo heeft eigen bordbediening en gescheiden JSON-opslag per puzzel. [Implementatie](https://github.com/omer-faruq/nonogram.koplugin/blob/f4d44bc05b17b3649dfdb078b0b91081aaa9afcb/main.lua) · [Licentie](https://github.com/omer-faruq/nonogram.koplugin/blob/f4d44bc05b17b3649dfdb078b0b91081aaa9afcb/LICENSE) |
+| robx/pzprjs | MIT | Aanvullende controle van de klassieke definitie in een bestaande speler, inclusief aantallen, duplicaten en somcontrole. [Doppelblock](https://github.com/robx/pzprjs/blob/028ca1e6115fc8009eed67c0dbb6c01f8a56aaad/src/variety/doppelblock.js) |
+| semiexp/cspuz_core | MIT voor de geraadpleegde puzzelcode. De repository vermeldt aanvullende licenties voor SAT-componenten. | Tweede formulering van de klassieke randvoorwaarde via cellen met een blok aan beide kanten. [Doppelblock-model](https://github.com/semiexp/cspuz_core/blob/2fba19520bcebf7908ef0ce8c319f0b20cac8969/cspuz_rs_puzzles/src/puzzles/doppelblock.rs) · [Licenties](https://github.com/semiexp/cspuz_core/blob/2fba19520bcebf7908ef0ce8c319f0b20cac8969/LICENSE) |
+
+Het hergebruik betreft API-aanroepen en algoritmische ideeën. Er is geen broncode uit de geraadpleegde puzzelimplementaties gekopieerd of vertaald en er zijn geen puzzels uit uitgeversmateriaal of datasets overgenomen. KOReader verzorgt de lettertypen en het tekenen van tekst op het apparaat.
