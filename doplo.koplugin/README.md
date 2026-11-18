@@ -1,37 +1,37 @@
-# Doplo voor KOReader
+# Doplo for KOReader
 
-## Installeren op een Kobo
+## Installing on a Kobo
 
-1. Sluit KOReader af, sluit de Kobo via USB aan en open de opslag op je computer.
-2. Pak de installatie-ZIP uit. Kopieer de hele map `doplo.koplugin` naar `.adds/koreader/plugins/`. Het resultaat is `.adds/koreader/plugins/doplo.koplugin/main.lua`. Zet de weergave van verborgen bestanden aan als je `.adds` niet ziet.
-3. Werp de Kobo uit en start KOReader. Open het bovenmenu en kies **Tools → Doplo**. Op de eerste start staat een 5×5-puzzel klaar. Daarna opent je laatst gespeelde puzzel.
+1. Close KOReader, connect the Kobo via USB and open its storage on your computer.
+2. Extract the installation ZIP. Copy the entire `doplo.koplugin` folder to `.adds/koreader/plugins/`. The resulting path is `.adds/koreader/plugins/doplo.koplugin/main.lua`. Enable hidden files in your file manager if you cannot see `.adds`.
+3. Eject the Kobo and start KOReader. Open the top menu and choose **Tools → Doplo**. A 5×5 puzzle is ready on first launch. After that, your last game opens automatically.
 
-Doplo is beschikbaar vanuit de bestandsbrowser en tijdens het lezen. Een eerder uitgeschakelde plugin kun je weer aanzetten onder **Tools → More tools → Plugin management**. Herstart daarna KOReader. Op andere touchapparaten hoort de pluginmap in de `plugins`-map van de KOReader-installatie of het schrijfbare KOReader-profiel.
+Doplo is available from the file browser and while reading. If the plugin was previously disabled, enable it under **Tools → More tools → Plugin management**, then restart KOReader. On other touch devices, place the plugin folder in the `plugins` folder of the KOReader installation or its writable profile.
 
-## Spelen
+## Playing
 
-Tik op een vak en vervolgens op een cijfer, **■** of **Erase**. Met **Pencil** zet of verwijder je kandidaten in een leeg vak. Een grijs vak met een stip in de hoek is een vaste aanwijzing. **Undo** en **Redo** werken ook voor potloodnotities.
+Tap a cell, then a digit, **■** or **Erase**. Use **Pencil** to add or remove candidates in an empty cell. A gray cell with a dot in the corner is a given. **Undo** and **Redo** also work for pencil marks.
 
-**Game → New puzzle** laat je variant, formaat en moeilijkheid kiezen. Op het scherm **Difficulty** zet je **Prefilled cells: Off** of **On**. Standaard is dit **Off**: elk nieuw bord begint volledig leeg, bij elk niveau. Je keuze wordt onthouden; bestaande spellen blijven bewaard. **Game → Saved puzzles** opent eerdere spellen. **Check** controleert je invoer. **Hint** licht één gedwongen waarde toe. Met **Place value** kun je die invullen. **Game → Show solution** toont de oplossing apart. Met **Return** kom je terug bij je eigen invulling.
+**Game → New puzzle** lets you choose a variant, size and difficulty. On the **Difficulty** screen, select **Prefilled cells: Off** or **On**. The default is **Off**: every new board starts completely empty at every difficulty level. Your choice is remembered, and existing games are preserved. **Game → Saved puzzles** opens previous games. **Check** checks your entries. **Hint** explains one forced value, which you can enter with **Place value**. **Game → Show solution** shows the solution separately. **Return** takes you back to your own entries.
 
-Het vergrote detailvak toont alle pencil-notities in de geselecteerde cel, met daarnaast de rij- en kolomaanwijzingen. Tik op het detailvak of houd een cel ingedrukt voor het grote invoervenster. Het bord blijft volledig zichtbaar en de randcijfers zijn groter en zwart. **Brightness** opent de KOReader-verlichtingsbediening op apparaten die verlichting ondersteunen. De bladerknoppen verplaatsen op het spelbord de selectie één vak terug of vooruit.
+The enlarged detail cell shows all pencil marks in the selected cell, with its row and column clues alongside. Tap the detail cell or hold a board cell to open the larger input dialog. The whole board stays visible, and the edge clues use larger black digits. **Brightness** opens KOReader's frontlight controls on supported devices. Page-turn buttons move the board selection one cell backward or forward.
 
-## Regels
+## Rules
 
-| Spel | Rooster | Blokken per rij en kolom | Cijfers per rij en kolom |
+| Game | Grid | Blocks per row and column | Digits per row and column |
 | --- | --- | --- | --- |
 | Doplo | 5×5 / 6×6 / 7×7 / 8×8 | 2 | 1–3 / 1–4 / 1–5 / 1–6 |
 | Doplo Plus | 7×7 / 8×8 / 9×9 / 10×10 / 11×11 | 2 / 2 / 3 / 3 / 3 | 1–5 / 1–6 / 1–6 / 1–7 / 1–8 |
 | Doplo Plus Extended | 12×12 | 4 | 1–8 |
 
-Elk cijfer komt per rij en per kolom precies één keer voor. Bij **Doplo** telt alleen wat strikt tussen de twee blokken staat. Zo geeft `1 ■ 2 3 ■` de som 5. Twee blokken naast elkaar geven 0.
+Each digit appears exactly once in each row and column. In **Doplo**, only digits strictly between the two blocks count toward the sum. For example, `1 ■ 2 3 ■` gives a sum of 5. Two adjacent blocks give 0.
 
-Bij **Doplo Plus** krijgt elke aaneengesloten groep cijfers een som, ook aan de rand. Lees rijen van links naar rechts en kolommen van boven naar beneden. De rij `1 2 ■ 3 ■ 4 5` geeft drie aanwijzingen, in de volgorde **3 · 3 · 9**. Opeenvolgende blokken creëren geen extra som. In een lijn met één aaneengesloten groep staat één aanwijzing. De uitgever beschrijft de formaten 7×7 en 10×10. De overige Plus-formaten zijn eigen uitbreidingen volgens dezelfde groepsregel. Doplo 7×7 en 8×8 breiden de klassieke regel uit. [Uitgeversregels, gedrukte p. 40](https://www.kueng-raetsel.ch/hefte/Taschen-Logik-Mix.pdf#page=13)
+In **Doplo Plus**, each uninterrupted run of digits has a sum, including runs at an edge. Read rows from left to right and columns from top to bottom. The row `1 2 ■ 3 ■ 4 5` gives three clues in this order: **3 · 3 · 9**. Consecutive blocks do not create an extra sum. A line with a single uninterrupted run has one clue. The publisher describes the 7×7 and 10×10 sizes. The other Plus sizes are the plugin's own extensions using the same run rule. Doplo 7×7 and 8×8 extend the classic rule. [Publisher's rules, printed p. 40](https://www.kueng-raetsel.ch/hefte/Taschen-Logik-Mix.pdf#page=13)
 
-Zowel met als zonder startwaarden zijn alle voorraadpuzzels uniek oplosbaar. Niveaus voor lege starts worden per variant en formaat ingedeeld; grote lege roosters kunnen ook op Easy meer zoekwerk vragen.
+All bank puzzles have a unique solution, both with and without givens. Difficulty for empty starts is graded by variant and size; large empty grids may require more searching even on Easy.
 
-## Opslag
+## Storage
 
-Doplo bewaart elke wijziging lokaal. Om je spellen te kopiëren maak je, met KOReader afgesloten, een kopie van `settings/doplo-games/` en `settings/doplo.lua` uit het KOReader-profiel. De Nederlandse handleiding gebruikt de Engelse knopnamen die je in de plugin ziet.
+Doplo saves every change locally. To copy your games, close KOReader and copy `settings/doplo-games/` and `settings/doplo.lua` from the KOReader profile.
 
-Versie 1.1.0. AGPL-3.0-or-later. [Licentie](LICENSE) · [Herkomst](SOURCES.md)
+Version 1.1.0. AGPL-3.0-or-later. [License](LICENSE) · [Sources](SOURCES.md)

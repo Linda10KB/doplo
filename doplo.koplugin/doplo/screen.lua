@@ -339,7 +339,7 @@ function W:newSize(kind)
     self:choose(M.name({ kind = kind }) .. "  ·  Choose a size", rows)
 end
 function W:newLevel(cfg)
-    local prefilled = self.owner.settings:readSetting("prefilled_cells", false)
+    local prefilled = self.owner.settings:readSetting("prefilled_cells") == true
     local rows = { {}, {} }
     for j, level in ipairs(M.levels) do
         local chosen = level
@@ -442,7 +442,7 @@ end
 function W:generate(cfg, level)
     local seed = os.time() + time.to_us(time.now()) % 2147483000
     local random = G.random(seed)
-    local prefilled = self.owner.settings:readSetting("prefilled_cells", false)
+    local prefilled = self.owner.settings:readSetting("prefilled_cells") == true
     local function ready()
         self.owner:start(self.owner:ready(cfg, level))
     end

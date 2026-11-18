@@ -170,6 +170,23 @@ package.loaded['doplo/store'] = {}
 local Plugin = dofile('doplo.koplugin/main.lua')
 owner.ready = Plugin.ready
 owner.start = function(_, nextPuzzle) owner.started = nextPuzzle end
+-- A fresh KOReader profile has no saved preference; nil must mean an empty start.
+values.prefilled_cells = nil
+local initial = owner:ready(M.config('classic', 5), 'Easy')
+assert(initial.prefilled == false and Game.new(initial):filled() == 0)
+local attempt = G.attempt
+G.attempt = function(cfg, level, _, opts)
+    assert(opts.prefilled == false)
+    local generated = G.candidate(cfg, G.random(642), 0)
+    generated.level, generated.prefilled = level, opts.prefilled
+    return generated
+end
+w:generate(M.config('classic', 5), 'Easy')
+w.job.step()
+G.attempt = attempt
+assert(not w.job and owner.started.prefilled == false and Game.new(owner.started):filled() == 0)
+owner.started = nil
+print('PASS missing start preference defaults to empty bank and generated puzzles')
 for _, kind in ipairs({'classic', 'plus'}) do
     for _, n in ipairs(M.sizes[kind]) do
         for _, level in ipairs(M.levels) do

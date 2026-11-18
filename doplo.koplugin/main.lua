@@ -22,7 +22,7 @@ function Plugin:addToMainMenu(items)
     }
 end
 function Plugin:ready(cfg, level)
-    local prefilled = self.settings:readSetting("prefilled_cells", false)
+    local prefilled = self.settings:readSetting("prefilled_cells") == true
     local mode = prefilled and "prefilled" or "empty"
     local records = require("doplo/bank")[cfg.kind][cfg.n][mode][level]
     local key = table.concat({ "ready", cfg.kind, cfg.n, mode, level }, "_")
