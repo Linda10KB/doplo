@@ -136,7 +136,7 @@ local function run()
         return
     end
     local g = w.game
-    assert(g.p.n == 5 and g.p.level == "Easy")
+    assert(g.p.n == 5 and g.p.level == "Easy" and g:filled() == 0 and g.p.prefilled == false)
     idfile("classic", w.id)
     local i = g.selected
     touch(layout.cell(w.a, i))
@@ -219,20 +219,23 @@ local function run()
     choose("Hard")
     choose("Play ready puzzle")
     pause()
-    assert(w.game.p.n == 12 and w.game.p.level == "Hard")
+    assert(w.game.p.n == 12 and w.game.p.level == "Hard" and w.game:filled() == 0)
     capture("doplo-plus-12x12")
-    button(w, "view")
-    choose("G–L  /  7–12")
-    assert(w.a.span == 6 and w.a.firstCol == 7 and w.a.firstRow == 7)
     local corner = layout.cell(w.a, 144)
     touch(corner)
-    assert(w.game.selected == 144)
-    capture("doplo-plus-zoom")
+    assert(w.game.selected == 144 and w.a.span == 12)
+    button(w, "pencil")
+    button(w, "v1")
+    button(w, "v8")
+    button(w, "v0")
+    capture("doplo-plus-detail")
+    touch(w.a.detail)
+    assert(top().title:find("Pencil: ■, 1, 8", 1, true))
+    choose("2")
+    assert(top().title:find("Pencil: ■, 1, 2, 8", 1, true))
+    choose("Back")
     UI:sendEvent(Event:new("KeyPress", Key:new("RPgFwd", {})))
-    assert(w.game.selected == 1 and w.a.firstCol == 1 and w.a.firstRow == 1)
-    button(w, "view")
-    choose("Full board")
-    assert(w.a.span == 12)
+    assert(w.game.selected == 1 and w.a.span == 12 and w.a.firstCol == 1 and w.a.firstRow == 1)
     local generator = require("doplo/generator")
     local privateRandom = generator.random
     generator.random = function()
@@ -242,12 +245,14 @@ local function run()
     choose("New puzzle")
     choose("Doplo")
     choose("6 × 6")
+    choose("Prefilled cells: Off")
+    assert(host.doplo.settings:readSetting("prefilled_cells") == true)
     choose("Medium")
     generator.random = privateRandom
     while w.job do
         pause()
     end
-    assert(w.game.p.n == 6 and w.game.p.level == "Medium" and host.doplo.settings:hasNot("ready_6_Medium"))
+    assert(w.game.p.n == 6 and w.game.p.level == "Medium" and host.doplo.settings:hasNot("ready_classic_6_prefilled_Medium"))
     -- Complete this board via the public gestures and check the solved message.
     for pos, v in ipairs(w.game.p.solution) do
         if w.game.p.givens[pos] == -1 then

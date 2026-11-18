@@ -1,3 +1,28 @@
+# Verificatie van versie 1.1.0
+
+Lokaal op macOS met LuaJIT uitgevoerd:
+
+- `luajit tests/engine.lua`: regels, onafhankelijke oplosser voor de oorspronkelijke kleine formaten, alle 960 voorraadpuzzels, live generatie, hints, undo/redo, herstel van speldata en geometrie op vijf schermmaten.
+- `luajit tests/ui.lua`: bediening met testdubbels voor KOReader. Controleert zwarte blokken, zichtbare selectie, grote pencil-notities, verversingen, het invoervenster, de startoptie, alle voorraadkeuzes, annulering en terugval bij een timeout.
+- De volledige voorraad bevat 12 puzzels voor elk van 80 combinaties. Elke puzzel is afzonderlijk opnieuw opgelost en op uniciteit en niveau gecontroleerd. Lege starts bevatten geen vaste waarden.
+- De nieuwe indeling is bekeken via een lokale renderharness. Dit is geen echte KOReader-framebufferopname.
+- De installatie-ZIP is opnieuw gebouwd en gecontroleerd op structuur en integriteit.
+
+De native frontlight-aanroep is gecontroleerd tegen de aanwezige KOReader-broncode en de officiële `frontend/ui/widget/frontlightwidget.lua`. De daadwerkelijke helderheidsregeling, e-inkverversing en fysieke bediening moeten nog op de e-reader worden getest. De bijgewerkte native tests `tests/ko_smoke.lua` en `tests/storage.lua` zijn in deze macOS-omgeving niet uitgevoerd; daarvoor is een uitvoerbare KOReader-build nodig.
+
+```sh
+luajit tests/engine.lua
+luajit tests/ui.lua
+python3 tools/package.py --out /tmp/doplo-release
+python3 tools/test_koreader.py /path/to/koreader \
+  --zip /tmp/doplo-release/doplo-v1.1.0.koplugin.zip \
+  --screens /tmp/doplo-screens
+```
+
+De volgende resultaten en de bestaande afbeeldingen in `docs/screens/` horen bij de eerdere versie en tonen dus nog de oude zoomfunctie.
+
+---
+
 # Testverslag voor versie 1.0.0
 
 De release is getest met de officiële Linux x86-64-versies **KOReader v2025.10** en **v2026.07.1**, met de bijbehorende LuaJIT, KOReader-widgets en SDL. De installatietest pakt de uiteindelijke ZIP uit in een nieuw profiel en start het ongewijzigde programma. De testcode bevindt zich alleen in de bronrepository. [KOReader v2025.10](https://github.com/koreader/koreader/releases/tag/v2025.10) · [KOReader v2026.07.1](https://github.com/koreader/koreader/releases/tag/v2026.07.1)

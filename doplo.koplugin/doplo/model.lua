@@ -1,11 +1,11 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 local M = { EMPTY = -1, BLOCK = 0 }
-M.sizes = { classic = { 5, 6 }, plus = { 7, 10, 12 } }
+M.sizes = { classic = { 5, 6, 7, 8 }, plus = { 7, 8, 9, 10, 11, 12 } }
 M.levels = { "Easy", "Medium", "Hard", "Expert" }
 
 function M.config(kind, n)
-    local blocks = kind == "plus" and ({ [7] = 2, [10] = 3, [12] = 4 })[n] or nil
-    if kind == "classic" and (n == 5 or n == 6) then
+    local blocks = kind == "plus" and ({ [7] = 2, [8] = 2, [9] = 3, [10] = 3, [11] = 3, [12] = 4 })[n] or nil
+    if kind == "classic" and (n == 5 or n == 6 or n == 7 or n == 8) then
         blocks = 2
     end
     if not blocks then
@@ -155,6 +155,9 @@ function M.validPuzzle(p)
     if type(p) ~= "table" then
         return false
     end
+    if p.prefilled ~= nil and type(p.prefilled) ~= "boolean" then
+        return false
+    end
     local cfg = M.config(p.kind, p.n)
     if not cfg or cfg.blocks ~= p.blocks then
         return false
@@ -171,6 +174,9 @@ function M.validPuzzle(p)
         return false
     end
     for i = 1, p.n ^ 2 do
+        if p.prefilled == false and p.givens[i] ~= -1 then
+            return false
+        end
         if p.givens[i] ~= -1 and p.givens[i] ~= p.solution[i] then
             return false
         end
@@ -179,7 +185,7 @@ function M.validPuzzle(p)
 end
 
 function M.valueText(v)
-    return v == 0 and "×" or tostring(v)
+    return v == 0 and "■" or tostring(v)
 end
 function M.name(p)
     return p.kind == "classic" and "Doplo" or "Doplo Plus"

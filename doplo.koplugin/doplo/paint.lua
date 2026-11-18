@@ -49,6 +49,36 @@ end
 local function frame(bb, b, thick, color)
     bb:paintBorder(b.x, b.y, b.w, b.h, thick, color)
 end
+-- Blocks use a solid rectangle at every scale, including pencil marks.
+function R:value(bb, box, value, size, face, color)
+    if value == 0 then
+        local side = math.max(2, floor(math.min(box.w, box.h) * 0.55))
+        fill(bb, rect(box.x + (box.w - side) / 2, box.y + (box.h - side) / 2, side, side), color or black)
+    else
+        self:text(bb, box, value, size, face, color)
+    end
+end
+function R:cellContent(bb, box, p, value, notes, given)
+    if value == 0 then
+        fill(bb, box, black)
+    elseif value ~= -1 then
+        self:value(bb, box, value, box.h * 0.61, given and "tfont" or "cfont")
+    elseif notes ~= 0 then
+        local digits = p.n - p.blocks
+        local cols = digits > 4 and 3 or 2
+        local rows = math.ceil((digits + 1) / cols)
+        local inset = math.max(2, floor(box.w * 0.05))
+        local stepW, stepH = (box.w - 2 * inset) / cols, (box.h - 2 * inset) / rows
+        for mark = 0, digits do
+            if band(notes, 2 ^ mark) ~= 0 then
+                local pos = mark == 0 and digits or mark - 1
+                local note = rect(box.x + inset + (pos % cols) * stepW,
+                    box.y + inset + floor(pos / cols) * stepH, stepW, stepH)
+                self:value(bb, note, mark, math.min(stepH * 0.85, box.w * 0.28), "tfont", black)
+            end
+        end
+    end
+end
 function R:draw(bb, a, g, reveal)
     if self.count > 600 then
         self:clear()
@@ -58,15 +88,6 @@ function R:draw(bb, a, g, reveal)
     bb:paintRect(0, 0, a.w, a.h, white)
     self:text(bb, a.title, M.name(p), px(35), "NotoSerif-Regular.ttf", black, "left")
     local subtitle = ("%d × %d   ·   %s"):format(p.n, p.n, p.level)
-    if a.span ~= p.n then
-        subtitle = subtitle
-            .. ("   ·   %s–%s / %d–%d"):format(
-                string.char(64 + a.firstCol),
-                string.char(63 + a.firstCol + a.span),
-                a.firstRow,
-                a.firstRow + a.span - 1
-            )
-    end
     if reveal then
         subtitle = subtitle .. "   ·   Solution"
     end
@@ -84,19 +105,19 @@ function R:draw(bb, a, g, reveal)
             bb:paintRect(a.gx - px(3), left.y + floor(cell * 0.30), px(3), floor(cell * 0.40), black)
         end
         if p.kind == "classic" then
-            self:text(bb, top, p.col[colId][1], cell * 0.33, "tfont", ink)
-            self:text(bb, left, p.row[rowId][1], cell * 0.33, "tfont", ink)
+            self:text(bb, top, p.col[colId][1], a.clueSize, "tfont", black)
+            self:text(bb, left, p.row[rowId][1], a.clueSize, "tfont", black)
         else
-            local sw = floor((a.left - px(3)) / a.maxR)
-            local sh = floor((a.top - px(3)) / a.maxC)
+            local sw = a.slotW
+            local sh = a.slotH
             local row, col = p.row[rowId], p.col[colId]
             for j, v in ipairs(row) do
                 local box = rect(a.gx - px(4) - (#row - j + 1) * sw, left.y, sw, cell)
-                self:text(bb, box, v, cell * 0.32, "tfont", ink)
+                self:text(bb, box, v, a.clueSize, "tfont", black)
             end
             for j, v in ipairs(col) do
                 local box = rect(top.x, a.gy - px(4) - (#col - j + 1) * sh, cell, sh)
-                self:text(bb, box, v, cell * 0.32, "tfont", ink)
+                self:text(bb, box, v, a.clueSize, "tfont", black)
             end
         end
     end
@@ -112,25 +133,7 @@ function R:draw(bb, a, g, reveal)
             local dot = math.max(2, floor(cell * 0.055))
             bb:paintRect(box.x + px(3), box.y + px(3), dot, dot, ink)
         end
-        if v ~= -1 then
-            self:text(bb, box, M.valueText(v), cell * (v == 0 and 0.67 or 0.61), given and "tfont" or "cfont")
-        elseif g.notes[i] ~= 0 then
-            local cols = (p.n - p.blocks > 4) and 3 or 2
-            local rows = math.ceil((p.n - p.blocks + 1) / cols)
-            local stepW, stepH = (cell - 2 * px(3)) / cols, (cell - 2 * px(3)) / rows
-            for mark = 0, p.n - p.blocks do
-                if band(g.notes[i], 2 ^ mark) ~= 0 then
-                    local pos = mark == 0 and p.n - p.blocks or mark - 1
-                    local note = rect(
-                        box.x + px(3) + (pos % cols) * stepW,
-                        box.y + px(3) + floor(pos / cols) * stepH,
-                        stepW,
-                        stepH
-                    )
-                    self:text(bb, note, M.valueText(mark), math.min(stepH * 0.75, cell * 0.24), "cfont", ink)
-                end
-            end
-        end
+        self:cellContent(bb, box, p, v, reveal and 0 or g.notes[i], given)
     end
     local side = cell * a.span
     for k = 1, a.span - 1 do
@@ -140,27 +143,33 @@ function R:draw(bb, a, g, reveal)
     frame(bb, rect(a.gx, a.gy, side, side), px(2), black)
     local selected = Layout.cell(a, g.selected)
     local inset = px(2)
-    frame(bb, rect(selected.x + inset, selected.y + inset, cell - 2 * inset, cell - 2 * inset), px(2), black)
+    frame(bb, rect(selected.x + inset, selected.y + inset, cell - 2 * inset, cell - 2 * inset), px(2), (reveal and p.solution[g.selected] or g.board[g.selected]) == 0 and white or black)
 
-    local info = a.info
-    local left = rect(info.x, info.y, info.w * 0.68, info.h)
-    local right = rect(info.x + info.w * 0.68, info.y, info.w * 0.32, info.h)
     local label = "Cell " .. string.char(64 + sc) .. sr
     if reveal then
-        label = "Solution view"
-    elseif g.p.givens[g.selected] ~= -1 then
-        label = label .. "   ·   Given"
+        label = label .. " · Solution"
+    elseif p.givens[g.selected] ~= -1 then
+        label = label .. " · Given"
     elseif g.pencil then
-        label = label .. "   ·   Pencil"
+        label = label .. " · Pencil"
     end
-    self:text(bb, left, label, px(17), "tfont", black, "left")
+    local detail = a.detail
+    if p.givens[g.selected] ~= -1 then
+        fill(bb, detail, light)
+    end
+    self:cellContent(bb, detail, p, reveal and p.solution[g.selected] or g.board[g.selected],
+        reveal and 0 or g.notes[g.selected], p.givens[g.selected] ~= -1)
+    frame(bb, detail, px(2), black)
+    self:text(bb, a.detailLabel, label, px(18), "tfont", black, "left")
     local counter = g:solved() and "Solved" or ("%d / %d filled"):format(g:filled(), p.n ^ 2)
-    self:text(bb, right, counter, px(15), "cfont", ink, "right")
+    self:text(bb, a.counter, counter, px(16), "cfont", ink, "left")
+    self:text(bb, a.rowDetail, "Row " .. sr .. ":  " .. table.concat(p.row[sr], " · "), px(22), "tfont", black, "left")
+    self:text(bb, a.colDetail, "Column " .. string.char(64 + sc) .. ":  " .. table.concat(p.col[sc], " · "), px(22), "tfont", black, "left")
     for _, b in ipairs(a.buttons) do
         local isValue = b.id:match("^v%-?%d+$") ~= nil
         local active = b.id == "pencil" and g.pencil and not reveal
         local disabled = (b.id == "undo" and g.cursor == 0) or (b.id == "redo" and g.cursor == #g.history)
-        if reveal and b.id ~= "game" and b.id ~= "close" and b.id ~= "view" then
+        if reveal and b.id ~= "game" and b.id ~= "close" and b.id ~= "brightness" then
             disabled = true
         end
         if isValue and g.p.givens[g.selected] ~= -1 then
@@ -177,10 +186,11 @@ function R:draw(bb, a, g, reveal)
         end
         local color = active and white or (disabled and gray or black)
         local number = isValue and b.id ~= "v-1"
-        self:text(
-            bb,
+        local draw = b.id == "v0" and self.value or self.text
+        draw(
+            self, bb,
             rect(b.x + px(2), b.y, b.w - 2 * px(2), b.h),
-            labelText,
+            b.id == "v0" and 0 or labelText,
             px(number and 28 or 17),
             number and "tfont" or "cfont",
             color

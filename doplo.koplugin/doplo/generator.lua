@@ -44,11 +44,13 @@ function G.candidate(cfg, random, fraction)
 end
 local densities = { Easy = { 28, 55 }, Medium = { 14, 38 }, Hard = { 3, 25 }, Expert = { 0, 17 } }
 function G.attempt(cfg, level, random, opts)
+    opts = opts or {}
     local range = densities[level]
     local fraction = (range[1] + random(range[2] - range[1] + 1) - 1) / 100
-    local p = G.candidate(cfg, random, fraction)
+    local p = G.candidate(cfg, random, opts.prefilled == false and 0 or fraction)
+    p.prefilled = opts.prefilled ~= false
     local r = S.solve(p, nil, opts)
-    p.level = Difficulty.rate(r)
+    p.level = Difficulty.rate(r, p)
     if p.level == level and M.equal(r.solution, p.solution) then
         return p, r
     end
@@ -63,14 +65,14 @@ function G.encode(p)
     end
     return table.concat(sol), table.concat(mask)
 end
-function G.decode(kind, n, level, record)
+function G.decode(kind, n, level, record, prefilled)
     local a, b = {}, {}
     for i = 1, n ^ 2 do
         a[i] = tonumber(record[1]:sub(i, i))
         b[i] = tonumber(record[2]:sub(i, i)) or -1
     end
     local p = M.puzzle(M.config(kind, n), a, b)
-    p.level = level
+    p.level, p.prefilled = level, prefilled ~= false
     return p
 end
 return G

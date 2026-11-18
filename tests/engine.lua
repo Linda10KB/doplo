@@ -19,8 +19,10 @@ end
 local function equal(a, b)
     assert(M.equal(a, b), table.concat(a or {}, ",") .. " != " .. table.concat(b or {}, ","))
 end
-local function puzzle(n, level, idx)
-    return G.decode(n < 7 and "classic" or "plus", n, level, bank[n][level][idx or 1])
+local function puzzle(n, level, idx, kind, prefilled)
+    kind = kind or (n < 7 and "classic" or "plus")
+    local mode = prefilled == false and "empty" or "prefilled"
+    return G.decode(kind, n, level, bank[kind][n][mode][level][idx or 1], prefilled)
 end
 test("Classic includes only the strict interior, including the zero case", function()
     equal(M.sums("classic", { 0, 1, 2, 3, 0 }), { 6 })
@@ -200,7 +202,7 @@ local function independentCount(p)
 end
 test("Independent 5×5 row oracle agrees for all 48 bank puzzles and 60 new inputs", function()
     for _, level in ipairs(M.levels) do
-        for j = 1, #bank[5][level] do
+        for j = 1, #bank.classic[5].prefilled[level] do
             assert(independentCount(puzzle(5, level, j)) == 1)
         end
     end
@@ -219,7 +221,7 @@ test("Independent 5×5 row oracle agrees for all 48 bank puzzles and 60 new inpu
 end)
 test("Independent board solver certifies all 48 Plus 7×7 puzzles", function()
     for _, level in ipairs(M.levels) do
-        for j = 1, #bank[7][level] do
+        for j = 1, #bank.plus[7].prefilled[level] do
             assert(independentCount(puzzle(7, level, j)) == 1)
         end
     end
@@ -229,26 +231,34 @@ test("Budget exhaustion cannot certify uniqueness or difficulty", function()
     local a = S.solve(p, nil, { workLimit = 10 })
     assert(a.status == "budget" and not D.rate(a))
 end)
-test("All 240 bank puzzles are distinct, valid, uniquely solved and correctly rated", function()
+test("Every size, mode and grade has twelve distinct, uniquely solved bank puzzles", function()
     local count, distinct = 0, {}
     for _, kind in ipairs({ "classic", "plus" }) do
         for _, n in ipairs(M.sizes[kind]) do
-            for _, level in ipairs(M.levels) do
-                for j, record in ipairs(bank[n][level]) do
-                    local p = puzzle(n, level, j)
-                    local sig = n .. record[1] .. record[2]
-                    assert(not distinct[sig])
-                    distinct[sig] = true
-                    assert(M.validPuzzle(p))
-                    local r = S.solve(p)
-                    assert(r.status == "ok" and r.count == 1 and D.rate(r) == level)
-                    equal(r.solution, p.solution)
-                    count = count + 1
+            for _, mode in ipairs({ "prefilled", "empty" }) do
+                for _, level in ipairs(M.levels) do
+                    local records = bank[kind][n][mode][level]
+                    assert(#records == 12)
+                    for j, record in ipairs(records) do
+                        local p = puzzle(n, level, j, kind, mode == "prefilled")
+                        local sig = kind .. mode .. n .. record[1] .. record[2]
+                        assert(not distinct[sig])
+                        distinct[sig] = true
+                        assert(M.validPuzzle(p))
+                        local r = S.solve(p)
+                        assert(r.status == "ok" and r.count == 1 and D.rate(r, p) == level, kind .. n .. mode .. level)
+                        equal(r.solution, p.solution)
+                        if mode == "empty" then
+                            assert(Game.new(p):filled() == 0)
+                            equal(p.givens, M.array(n * n, -1))
+                        end
+                        count = count + 1
+                    end
                 end
             end
         end
     end
-    assert(count == 240)
+    assert(count == 960)
 end)
 test("Live offline generation produces every selected size and grade", function()
     for _, kind in ipairs({ "classic", "plus" }) do
@@ -264,9 +274,24 @@ test("Live offline generation produces every selected size and grade", function(
                 end
                 assert(generated, n .. " " .. level)
                 local r = S.solve(generated)
-                assert(M.validPuzzle(generated) and D.rate(r) == level)
+                assert(M.validPuzzle(generated) and D.rate(r, generated) == level)
                 equal(generated.solution, r.solution)
             end
+        end
+    end
+end)
+test("Live empty generation respects both the start option and chosen grade", function()
+    for _, cfg in ipairs({ M.config("classic", 5), M.config("plus", 11) }) do
+        for j, level in ipairs(M.levels) do
+            local random, generated = G.random(135 + j * 7 + cfg.n)
+            for _ = 1, 1200 do
+                generated = G.attempt(cfg, level, random, { prefilled = false, workLimit = 600000 })
+                if generated then break end
+            end
+            assert(generated, cfg.kind .. cfg.n .. level)
+            assert(generated.prefilled == false and Game.new(generated):filled() == 0)
+            local r = S.solve(generated)
+            assert(D.rate(r, generated) == level and M.equal(r.solution, generated.solution))
         end
     end
 end)
@@ -292,7 +317,7 @@ test("Logical hints are forced; wrong entries and a full board have no hint", fu
 end)
 test("Expert contradiction hints eliminate every named alternative by independent search", function()
     local proved = false
-    for j = 1, #bank[5].Expert do
+    for j = 1, #bank.classic[5].prefilled.Expert do
         local p = puzzle(5, "Expert", j)
         local b = M.copy(p.givens)
         for _ = 1, 25 do
@@ -352,9 +377,10 @@ test("Long games retain a consistent undo window and reject invalid saved data",
     assert(not Game.restore(x))
 end)
 test("Portrait and landscape geometry keep every target on-screen and addressable", function()
-    for _, n in ipairs({ 5, 6, 7, 10, 12 }) do
+    for _, kind in ipairs({ "classic", "plus" }) do
+        for _, n in ipairs(M.sizes[kind]) do
         for _, wh in ipairs({ { 600, 800 }, { 1264, 1680 }, { 800, 600 }, { 1680, 1264 }, { 320, 480 } }) do
-            local a = Layout.make(puzzle(n, "Hard"), wh[1], wh[2])
+            local a = Layout.make(puzzle(n, "Hard", 1, kind), wh[1], wh[2], true)
             for i = 1, n * n do
                 local b = Layout.cell(a, i)
                 assert(Layout.cellAt(a, b.x + b.w / 2, b.y + b.h / 2) == i)
@@ -363,9 +389,27 @@ test("Portrait and landscape geometry keep every target on-screen and addressabl
                     assert(not Layout.inside(bt, b.x + b.w / 2, b.y + b.h / 2))
                 end
             end
+            assert(a.span == n and a.firstRow == 1 and a.firstCol == 1)
+            assert(a.gy + n * a.cell <= a.panel.y or wh[1] >= wh[2] * 1.16)
+            assert(a.detail.w >= a.px(90))
             for _, b in ipairs(a.buttons) do
+                assert(b.id ~= "view")
                 assert(b.x >= 0 and b.y >= 0 and b.x + b.w <= a.w and b.y + b.h <= a.h)
             end
+        end
+        end
+    end
+end)
+test("Empty starts keep notes, edits and the mode through save restoration", function()
+    for _, kind in ipairs({ "classic", "plus" }) do
+        for _, n in ipairs(M.sizes[kind]) do
+            local game = Game.new(puzzle(n, "Medium", 1, kind, false))
+            assert(game:edit(1, 0, true) and game:edit(1, n - game.p.blocks, true))
+            local restored = assert(Game.restore(game:snapshot()))
+            assert(restored.p.prefilled == false and restored:filled() == 0)
+            assert(restored.notes[1] == 1 + 2 ^ (n - restored.p.blocks))
+            assert(restored:edit(1, 0, false) and restored:travel(false))
+            assert(restored.notes[1] == 1 + 2 ^ (n - restored.p.blocks))
         end
     end
 end)

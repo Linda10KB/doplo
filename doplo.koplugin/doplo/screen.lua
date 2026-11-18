@@ -54,10 +54,10 @@ function W:init()
 end
 function W:layout()
     self.dimen = Geom:new({ x = 0, y = 0, w = Screen:getWidth(), h = Screen:getHeight() })
-    self.a = Layout.make(self.game.p, self.dimen.w, self.dimen.h, self.tile)
+    self.a = Layout.make(self.game.p, self.dimen.w, self.dimen.h, Device:hasFrontlight())
 end
 function W:use(id, game)
-    self.id, self.game, self.dirty, self.reveal, self.tile = id, game, false, false, nil
+    self.id, self.game, self.dirty, self.reveal = id, game, false, false
     self:layout()
     UI:setDirty(self, "ui")
 end
@@ -89,17 +89,6 @@ function W:cellDirty(i, clues)
 end
 function W:afterChange(old)
     local g = self.game
-    if self.tile and not Layout.cell(self.a, g.selected) then
-        local n = g.p.n
-        self.tile = Layout.tile(
-            n,
-            math.floor((g.selected - 1) / n) < self.tile.span,
-            (g.selected - 1) % n < self.tile.span
-        )
-        self:layout()
-        self:refresh()
-        return
-    end
     local moved = old ~= g.selected
     self:cellDirty(g.selected, moved)
     if moved then
@@ -117,38 +106,12 @@ function W:afterChange(old)
         end
     end
 end
-function W:setView(tile)
-    self.tile = tile
-    self:layout()
-    if tile and not Layout.cell(self.a, self.game.selected) then
-        self.game.selected = (tile.row - 1) * self.game.p.n + tile.col
-        self.dirty = true
+function W:brightness()
+    if Device:hasFrontlight() then
+        UI:show(require("ui/widget/frontlightwidget"):new({}))
+    else
+        message("Brightness control is not available on this device.")
     end
-    self:refresh()
-end
-function W:view()
-    local n = self.game.p.n
-    local rows = { { item("Full board", function()
-        self:setView(nil)
-    end) } }
-    for _, upper in ipairs({ true, false }) do
-        local row = {}
-        for _, left in ipairs({ true, false }) do
-            local tile = Layout.tile(n, upper, left)
-            local label = ("%s–%s  /  %d–%d"):format(
-                string.char(64 + tile.col),
-                string.char(63 + tile.col + tile.span),
-                tile.row,
-                tile.row + tile.span - 1
-            )
-            row[#row + 1] = item(label, function()
-                self:setView(tile)
-            end)
-        end
-        rows[#rows + 1] = row
-    end
-    rows[#rows + 1] = { item("Back") }
-    self:choose("Enlarge a section · edge clues cover the whole line", rows)
 end
 function W:select(i)
     local old = self.game.selected
@@ -256,23 +219,20 @@ function W:choose(title, options)
 end
 function W:rules()
     local p = self.game.p
-    local opening = ("Each row and column contains %d crosses and each digit 1–%d once.\n\n"):format(
+    local opening = ("Each row and column contains %d filled blocks and each digit 1–%d once.\n\n"):format(
         p.blocks,
         p.n - p.blocks
     )
     local detail = p.kind == "classic"
-            and "Only digits strictly between the two crosses contribute to the edge sum. Adjacent crosses give zero."
-        or "Each clue is the sum of one uninterrupted run of digits. Read from left to right or top to bottom. Crosses separate runs. Extra crosses may touch each other or an edge."
+            and "Only digits strictly between the two blocks contribute to the edge sum. Adjacent blocks give zero."
+        or "Each clue is the sum of one uninterrupted run of digits. Read from left to right or top to bottom. Blocks separate runs. Extra blocks may touch each other or an edge."
     if p.n == 12 then
         detail = detail .. " This 12 × 12 size extends the published Plus rules."
-    end
-    if p.n >= 7 then
-        detail = detail .. " View enlarges a section and keeps its full line clues."
     end
     message(
         opening
             .. detail
-            .. "\n\nTap a cell, then a value. Hold a cell for a larger keypad and its clues. Pencil toggles candidates. A dot marks a given. Page buttons move between cells while the board is open."
+            .. "\n\nTap a cell, then a value. The enlarged cell below the board shows all its pencil marks. Tap it or hold a cell for a larger keypad and its clues. Pencil toggles candidates. A dot marks a given. Page buttons move between cells while the board is open."
     )
 end
 function W:library(page)
@@ -379,6 +339,7 @@ function W:newSize(kind)
     self:choose(M.name({ kind = kind }) .. "  ·  Choose a size", rows)
 end
 function W:newLevel(cfg)
+    local prefilled = self.owner.settings:readSetting("prefilled_cells", false)
     local rows = { {}, {} }
     for j, level in ipairs(M.levels) do
         local chosen = level
@@ -387,6 +348,10 @@ function W:newLevel(cfg)
             self:generate(cfg, chosen)
         end)
     end
+    rows[#rows + 1] = { item("Prefilled cells: " .. (prefilled and "On" or "Off"), function()
+        self.owner.settings:saveSetting("prefilled_cells", not prefilled):flush()
+        self:newLevel(cfg)
+    end) }
     rows[#rows + 1] = { item("Back", function()
         self:newSize(cfg.kind)
     end) }
@@ -477,12 +442,13 @@ end
 function W:generate(cfg, level)
     local seed = os.time() + time.to_us(time.now()) % 2147483000
     local random = G.random(seed)
+    local prefilled = self.owner.settings:readSetting("prefilled_cells", false)
     local function ready()
         self.owner:start(self.owner:ready(cfg, level))
     end
     self:work(("Generating %s %d×%d · %s…"):format(M.name(cfg), cfg.n, cfg.n, level), function(tick)
         for _ = 1, 80 do
-            local p = G.attempt(cfg, level, random, { tick = tick, workLimit = 450000 })
+            local p = G.attempt(cfg, level, random, { tick = tick, workLimit = 450000, prefilled = prefilled })
             if p then
                 return p
             end
@@ -503,7 +469,7 @@ function W:check()
         local name = axis == "row" and ("Row " .. k) or ("Column " .. string.char(64 + k))
         local why = ({
             sums = "The sums do not match the edge clues.",
-            blocks = "The cross count is impossible.",
+            blocks = "The block count is impossible.",
             duplicate = "The digit " .. tostring(value) .. " appears twice.",
             given = "A fixed clue has changed.",
             range = "A value is outside the allowed range.",
@@ -571,7 +537,7 @@ function W:largePad(i)
     self:select(i)
     local p = self.game.p
     local r, c = math.floor((i - 1) / p.n) + 1, (i - 1) % p.n + 1
-    local title = ("%s   ·   Row %s   /   Column %s"):format(
+    local title = ("Cell %s\nRow: %s\nColumn: %s"):format(
         coord(i, p.n),
         table.concat(p.row[r], " · "),
         table.concat(p.col[c], " · ")
@@ -580,6 +546,8 @@ function W:largePad(i)
         message(title .. "\nValue: " .. M.valueText(self.reveal and p.solution[i] or p.givens[i]))
         return
     end
+    local marks = maskText(self.game.notes[i], p.n - p.blocks)
+    title = title .. "\nPencil: " .. (marks ~= "" and marks or "None")
     local rows = {}
     for v = 1, p.n - p.blocks do
         local value = v
@@ -589,10 +557,16 @@ function W:largePad(i)
         local row = rows[#rows]
         row[#row + 1] = item(tostring(v), function()
             self:edit(value)
+            if self.game.pencil then
+                self:largePad(i)
+            end
         end)
     end
-    rows[#rows + 1] = { item("×", function()
+    rows[#rows + 1] = { item("■", function()
         self:edit(0)
+        if self.game.pencil then
+            self:largePad(i)
+        end
     end), item("Erase", function()
         self:edit(-1)
     end) }
@@ -619,6 +593,10 @@ function W:onTap(_, ges)
         self:select(i)
         return true
     end
+    if Layout.inside(self.a.detail, x, y) then
+        self:largePad(self.game.selected)
+        return true
+    end
     for _, b in ipairs(self.a.buttons) do
         if Layout.inside(b, x, y) then
             local id = b.id
@@ -626,8 +604,8 @@ function W:onTap(_, ges)
                 self:onLeave()
             elseif id == "game" then
                 self:gameMenu()
-            elseif id == "view" then
-                self:view()
+            elseif id == "brightness" then
+                self:brightness()
             elseif self.reveal then
                 return true
             elseif id == "undo" or id == "redo" then

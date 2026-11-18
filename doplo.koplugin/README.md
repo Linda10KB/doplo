@@ -10,26 +10,28 @@ Doplo is beschikbaar vanuit de bestandsbrowser en tijdens het lezen. Een eerder 
 
 ## Spelen
 
-Tik op een vak en vervolgens op een cijfer, **×** of **Erase**. Met **Pencil** zet of verwijder je kandidaten in een leeg vak. Een grijs vak met een stip in de hoek is een vaste aanwijzing. **Undo** en **Redo** werken ook voor potloodnotities.
+Tik op een vak en vervolgens op een cijfer, **■** of **Erase**. Met **Pencil** zet of verwijder je kandidaten in een leeg vak. Een grijs vak met een stip in de hoek is een vaste aanwijzing. **Undo** en **Redo** werken ook voor potloodnotities.
 
-**Game → New puzzle** laat je variant, formaat en moeilijkheid kiezen. **Game → Saved puzzles** opent eerdere spellen. **Check** controleert je invoer. **Hint** licht één gedwongen waarde toe. Met **Place value** kun je die invullen. **Game → Show solution** toont de oplossing apart. Met **Return** kom je terug bij je eigen invulling.
+**Game → New puzzle** laat je variant, formaat en moeilijkheid kiezen. Op het scherm **Difficulty** zet je **Prefilled cells: Off** of **On**. Standaard is dit **Off**: elk nieuw bord begint volledig leeg, bij elk niveau. Je keuze wordt onthouden; bestaande spellen blijven bewaard. **Game → Saved puzzles** opent eerdere spellen. **Check** controleert je invoer. **Hint** licht één gedwongen waarde toe. Met **Place value** kun je die invullen. **Game → Show solution** toont de oplossing apart. Met **Return** kom je terug bij je eigen invulling.
 
-Houd een vak ingedrukt voor een groter invoervenster met beide reeksaanwijzingen. Bij Doplo Plus kun je met **View** een deel van het bord vergroten. De randaanwijzingen blijven voor de hele rij of kolom gelden. De bladerknoppen verplaatsen op het spelbord de selectie één vak terug of vooruit.
+Het vergrote detailvak toont alle pencil-notities in de geselecteerde cel, met daarnaast de rij- en kolomaanwijzingen. Tik op het detailvak of houd een cel ingedrukt voor het grote invoervenster. Het bord blijft volledig zichtbaar en de randcijfers zijn groter en zwart. **Brightness** opent de KOReader-verlichtingsbediening op apparaten die verlichting ondersteunen. De bladerknoppen verplaatsen op het spelbord de selectie één vak terug of vooruit.
 
 ## Regels
 
-| Spel | Rooster | Kruisjes per rij en kolom | Cijfers per rij en kolom |
+| Spel | Rooster | Blokken per rij en kolom | Cijfers per rij en kolom |
 | --- | --- | --- | --- |
-| Doplo | 5×5 / 6×6 | 2 | 1–3 / 1–4 |
-| Doplo Plus | 7×7 / 10×10 | 2 / 3 | 1–5 / 1–7 |
+| Doplo | 5×5 / 6×6 / 7×7 / 8×8 | 2 | 1–3 / 1–4 / 1–5 / 1–6 |
+| Doplo Plus | 7×7 / 8×8 / 9×9 / 10×10 / 11×11 | 2 / 2 / 3 / 3 / 3 | 1–5 / 1–6 / 1–6 / 1–7 / 1–8 |
 | Doplo Plus Extended | 12×12 | 4 | 1–8 |
 
-Elk cijfer komt per rij en per kolom precies één keer voor. Bij **Doplo** telt alleen wat strikt tussen de twee kruisjes staat. Zo geeft `1 × 2 3 ×` de som 5. Twee kruisjes naast elkaar geven 0.
+Elk cijfer komt per rij en per kolom precies één keer voor. Bij **Doplo** telt alleen wat strikt tussen de twee blokken staat. Zo geeft `1 ■ 2 3 ■` de som 5. Twee blokken naast elkaar geven 0.
 
-Bij **Doplo Plus** krijgt elke aaneengesloten groep cijfers een som, ook aan de rand. Lees rijen van links naar rechts en kolommen van boven naar beneden. De rij `1 2 × 3 × 4 5` geeft drie aanwijzingen, in de volgorde **3 · 3 · 9**. Opeenvolgende kruisjes creëren geen extra som. In een lijn met één aaneengesloten groep staat één aanwijzing. De uitgever beschrijft de formaten 7×7 en 10×10. Het formaat 12×12 past dezelfde regel toe op vier kruisjes. [Uitgeversregels, gedrukte p. 40](https://www.kueng-raetsel.ch/hefte/Taschen-Logik-Mix.pdf#page=13)
+Bij **Doplo Plus** krijgt elke aaneengesloten groep cijfers een som, ook aan de rand. Lees rijen van links naar rechts en kolommen van boven naar beneden. De rij `1 2 ■ 3 ■ 4 5` geeft drie aanwijzingen, in de volgorde **3 · 3 · 9**. Opeenvolgende blokken creëren geen extra som. In een lijn met één aaneengesloten groep staat één aanwijzing. De uitgever beschrijft de formaten 7×7 en 10×10. De overige Plus-formaten zijn eigen uitbreidingen volgens dezelfde groepsregel. Doplo 7×7 en 8×8 breiden de klassieke regel uit. [Uitgeversregels, gedrukte p. 40](https://www.kueng-raetsel.ch/hefte/Taschen-Logik-Mix.pdf#page=13)
+
+Zowel met als zonder startwaarden zijn alle voorraadpuzzels uniek oplosbaar. Niveaus voor lege starts worden per variant en formaat ingedeeld; grote lege roosters kunnen ook op Easy meer zoekwerk vragen.
 
 ## Opslag
 
 Doplo bewaart elke wijziging lokaal. Om je spellen te kopiëren maak je, met KOReader afgesloten, een kopie van `settings/doplo-games/` en `settings/doplo.lua` uit het KOReader-profiel. De Nederlandse handleiding gebruikt de Engelse knopnamen die je in de plugin ziet.
 
-Versie 1.0.0. AGPL-3.0-or-later. [Licentie](LICENSE) · [Herkomst](SOURCES.md)
+Versie 1.1.0. AGPL-3.0-or-later. [Licentie](LICENSE) · [Herkomst](SOURCES.md)

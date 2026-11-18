@@ -8,46 +8,31 @@ Layout.rect = rect
 function Layout.inside(a, x, y)
     return x >= a.x and x < a.x + a.w and y >= a.y and y < a.y + a.h
 end
-function Layout.tile(n, upper, left)
-    local span = math.ceil(n / 2)
-    return { row = upper and 1 or n - span + 1, col = left and 1 or n - span + 1, span = span }
-end
-function Layout.make(p, w, h, tile)
+function Layout.make(p, w, h, frontlight)
     local u = math.min(w, h) / 600
     local function px(v)
         return math.max(1, floor(v * u + 0.5))
     end
-    local edge, gap, head = px(19), px(6), px(70)
+    local edge, gap, head = px(16), px(6), px(70)
     local wide = w >= h * 1.16
-    local a = {
-        w = w,
-        h = h,
-        u = u,
-        px = px,
-        head = head,
-        buttons = {},
-        n = p.n,
-        firstRow = tile and tile.row or 1,
-        firstCol = tile and tile.col or 1,
-        span = tile and tile.span or p.n,
-    }
+    local a = { w = w, h = h, u = u, px = px, head = head, buttons = {}, n = p.n,
+        firstRow = 1, firstCol = 1, span = p.n }
     local function button(id, b, label)
         b.id, b.label = id, label
         a.buttons[#a.buttons + 1] = b
     end
-    local closeW, gameW = px(66), px(75)
+    local closeW, gameW, lightW = px(66), px(75), frontlight and px(94) + gap or 0
     button("game", rect(w - edge - closeW - gap - gameW, px(12), gameW, px(43)), "Game")
     button("close", rect(w - edge - closeW, px(12), closeW, px(43)), "Close")
-    local viewW = p.n >= 7 and px(64) + gap or 0
-    if viewW > 0 then
-        button("view", rect(w - edge - closeW - gameW - viewW - 2 * gap, px(12), viewW - gap, px(43)), "View")
+    if frontlight then
+        button("brightness", rect(w - edge - closeW - gameW - lightW - 2 * gap, px(12), lightW - gap, px(43)), "Brightness")
     end
-    a.title = rect(edge, px(2), w - 2 * edge - closeW - gameW - viewW - 2 * gap, px(42))
+    a.title = rect(edge, px(2), w - 2 * edge - closeW - gameW - lightW - 2 * gap, px(42))
     a.subtitle = rect(edge, px(42), a.title.w, px(22))
 
-    local panelX = wide and floor(w * 0.63) or edge
+    local panelX = wide and floor(w * 0.62) or edge
     local panelW = w - panelX - edge
-    local keyH, barH = wide and px(52) or px(50), px(43)
+    local keyH, barH = px(48), px(43)
     local digits, keys = p.n - p.blocks, {}
     for v = 1, digits do
         keys[#keys + 1] = v
@@ -55,61 +40,69 @@ function Layout.make(p, w, h, tile)
     keys[#keys + 1], keys[#keys + 2] = 0, -1
     local per = wide and math.min(4, #keys) or math.min(6, #keys)
     local keyRows = math.ceil(#keys / per)
-    local panelH = px(36) + gap + keyRows * (keyH + gap) + barH
+    local detailH = wide and px(172) or px(100)
+    local panelH = detailH + gap + keyRows * (keyH + gap) + barH
     local panelY = wide and floor((h + head - panelH) / 2) or h - edge - panelH
     a.panel = rect(panelX, panelY, panelW, panelH)
-    a.info = rect(panelX, panelY, panelW, px(36))
+    a.info = rect(panelX, panelY, panelW, detailH)
+    local zoom = px(96)
+    a.detail = rect(panelX, panelY, zoom, zoom)
+    local textX = wide and panelX or panelX + zoom + px(12)
+    local textY = wide and panelY + zoom + gap or panelY
+    local textW = wide and panelW or panelW - zoom - px(12)
+    local lineH = wide and px(24) or px(25)
+    a.detailLabel = rect(wide and panelX + zoom + gap or textX, panelY,
+        wide and panelW - zoom - gap or textW, lineH)
+    a.counter = rect(a.detailLabel.x, panelY + lineH, a.detailLabel.w, lineH)
+    a.rowDetail = rect(textX, textY + (wide and 0 or 2 * lineH), textW, lineH)
+    a.colDetail = rect(textX, a.rowDetail.y + lineH, textW, lineH)
     local y = a.info.y + a.info.h + gap
     for row = 1, keyRows do
         local count = math.min(per, #keys - (row - 1) * per)
         local bw = (panelW - (count - 1) * gap) / count
         for j = 1, count do
             local v = keys[(row - 1) * per + j]
-            button(
-                "v" .. v,
-                rect(panelX + (j - 1) * (bw + gap), y, bw, keyH),
-                v == -1 and "Erase" or (v == 0 and "×" or tostring(v))
-            )
+            button("v" .. v, rect(panelX + (j - 1) * (bw + gap), y, bw, keyH),
+                v == -1 and "Erase" or (v == 0 and "■" or tostring(v)))
         end
         y = y + keyH + gap
     end
-    local tools = { { "pencil", "Pencil" }, { "undo", "Undo" }, { "redo", "Redo" }, { "hint", "Hint" }, {
-        "check",
-        "Check",
-    } }
+    local actions = { { "pencil", "Pencil" }, { "undo", "Undo" }, { "redo", "Redo" }, { "hint", "Hint" }, { "check", "Check" } }
     local bw = (panelW - 4 * gap) / 5
-    for j, item in ipairs(tools) do
-        button(item[1], rect(panelX + (j - 1) * (bw + gap), y, bw, barH), item[2])
+    for j, entry in ipairs(actions) do
+        button(entry[1], rect(panelX + (j - 1) * (bw + gap), y, bw, barH), entry[2])
     end
-    local boardW = (wide and panelX - edge or w) - 2 * edge
-    local boardH = (wide and h - edge or panelY - px(12)) - head - px(10)
+    local boardW = (wide and panelX - gap or w - edge) - edge
+    local boardH = (wide and h - edge or panelY - px(12)) - head - px(5)
     local maxR, maxC = 1, 1
     for i = 1, p.n do
         maxR = math.max(maxR, #p.row[i])
         maxC = math.max(maxC, #p.col[i])
     end
-    local leftUnits = p.kind == "classic" and 0.74 or maxR * 0.48 + 0.15
-    local topUnits = p.kind == "classic" and 0.68 or maxC * 0.42 + 0.12
-    local cell = floor(math.min(boardW / (a.span + leftUnits), boardH / (a.span + topUnits)))
-    local left, top = floor(cell * leftUnits), floor(cell * topUnits)
-    local totalW, totalH = a.span * cell + left, a.span * cell + top
+    -- Reserve actual text space, independent of cell size. Large grids must
+    -- never shrink their edge clues into miniature cell-relative type.
+    local clueSize = px(p.kind == "classic" and 25 or 22)
+    local slotW, slotH = px(30), px(26)
+    local left, top = maxR * slotW + px(6), maxC * slotH + px(6)
+    local cell = math.max(1, floor(math.min((boardW - left) / p.n, (boardH - top) / p.n)))
     a.cell, a.left, a.top, a.maxR, a.maxC = cell, left, top, maxR, maxC
-    a.gx = edge + floor((boardW - totalW) / 2) + left
-    a.gy = head + px(5) + floor((boardH - totalH) / 2) + top
+    a.clueSize, a.slotW, a.slotH = clueSize, slotW, slotH
+    a.gx = edge + floor((boardW - cell * p.n - left) / 2) + left
+    a.gy = head + px(5) + floor((boardH - cell * p.n - top) / 2) + top
     return a
 end
 function Layout.cell(a, i)
-    local col = (i - 1) % a.n + 1 - a.firstCol
-    local row = math.floor((i - 1) / a.n) + 1 - a.firstRow
-    if col < 0 or row < 0 or col >= a.span or row >= a.span then
+    local col = (i - 1) % a.n
+    local row = floor((i - 1) / a.n)
+    if col < 0 or row < 0 or col >= a.n or row >= a.n then
         return nil
     end
     return rect(a.gx + col * a.cell, a.gy + row * a.cell, a.cell, a.cell)
 end
 function Layout.cellAt(a, x, y)
     local col, row = floor((x - a.gx) / a.cell), floor((y - a.gy) / a.cell)
-    if col >= 0 and col < a.span and row >= 0 and row < a.span then
-        return (row + a.firstRow - 1) * a.n + col + a.firstCol
+    if col >= 0 and col < a.n and row >= 0 and row < a.n then
+        return row * a.n + col + 1
     end
 end
 return Layout

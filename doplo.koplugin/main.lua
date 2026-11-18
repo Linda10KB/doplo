@@ -22,11 +22,13 @@ function Plugin:addToMainMenu(items)
     }
 end
 function Plugin:ready(cfg, level)
-    local records = require("doplo/bank")[cfg.n][level]
-    local key = "ready_" .. cfg.n .. "_" .. level
+    local prefilled = self.settings:readSetting("prefilled_cells", false)
+    local mode = prefilled and "prefilled" or "empty"
+    local records = require("doplo/bank")[cfg.kind][cfg.n][mode][level]
+    local key = table.concat({ "ready", cfg.kind, cfg.n, mode, level }, "_")
     local index = self.settings:readSetting(key, 0) % #records + 1
     self.settings:saveSetting(key, index)
-    return Gen.decode(cfg.kind, cfg.n, level, records[index])
+    return Gen.decode(cfg.kind, cfg.n, level, records[index], prefilled)
 end
 function Plugin:activate(id, game)
     self.settings:saveSetting("active", id):flush()
