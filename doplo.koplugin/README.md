@@ -14,7 +14,11 @@ Tap a cell, then a digit, **■** or **Erase**. Use **Pencil** to add or remove 
 
 **Game → New puzzle** lets you choose a variant, size and difficulty. On the **Difficulty** screen, select **Prefilled cells: Off** or **On**. The default is **Off**: every new board starts completely empty at every difficulty level. Your choice is remembered, and existing games are preserved. **Game → Saved puzzles** opens previous games. **Check** checks your entries. **Hint** explains one forced value, which you can enter with **Place value**. **Game → Show solution** shows the solution separately. **Return** takes you back to your own entries.
 
-The enlarged detail cell shows all pencil marks in the selected cell, with its row and column clues alongside. Tap the detail cell or hold a board cell to open the larger input dialog. The whole board stays visible, and the edge clues use larger black digits. **Brightness** opens KOReader's frontlight controls on supported devices. Page-turn buttons move the board selection one cell backward or forward.
+The enlarged detail cell shows all pencil marks in the selected cell, with its row and column clues alongside. Tap the detail cell or hold a board cell to open the larger input dialog. The whole board stays visible, and the edge clues use larger black digits. **Device settings** opens brightness controls on supported devices, rotates the screen 90° at a time, or requests a full flashing refresh for e-ink ghosting. Rotation keeps your current entries, notes and selection. Page-turn buttons move the board selection one cell backward or forward.
+
+The separate **How to play** button offers guided practice for **Doplo** and **Doplo Plus**, with answer choices, explanations and retries. It does not change your current puzzle. Both **How to play** and **Device settings** remain available while viewing a solution.
+
+Completed puzzles get one of sixteen enthusiastic Dutch compliments. The sequence is remembered across sessions, so messages do not repeat until every compliment has had a turn.
 
 ## Rules
 
@@ -34,4 +38,4 @@ All bank puzzles have a unique solution, both with and without givens. Difficult
 
 Doplo saves every change locally. To copy your games, close KOReader and copy `settings/doplo-games/` and `settings/doplo.lua` from the KOReader profile.
 
-Version 1.1.0. AGPL-3.0-or-later. [License](LICENSE) · [Sources](SOURCES.md)
+Version 1.2.0. AGPL-3.0-or-later. [License](LICENSE) · [Sources](SOURCES.md)

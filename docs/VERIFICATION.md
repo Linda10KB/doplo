@@ -1,3 +1,33 @@
+# Version 1.2.0 verification — 2026-11-19
+
+Verified with the official **KOReader v2025.10 Linux x86-64** build and its bundled LuaJIT:
+
+- All 17 engine test groups passed, including validation of all 960 bank puzzles.
+- All seven UI groups passed, including device/help access during play and solution view, untouched saves during practice, and changing compliments on completion, Check and undo/redo. The compliment sequence survives module reloads and visits every message before repeating.
+- Dedicated tutorial tests cover both variants, incorrect/correct answers, retries, navigation and exit.
+- Device tests cover frontlight availability, full refresh requests, four rotations and reader/file-browser routing while preserving puzzle state.
+- Layout checks cover every variant and size at six portrait/landscape resolutions, including 320×480 and 480×320; touch targets and cells stay on screen without overlaps.
+- All four native storage groups passed.
+- The version 1.2.0 installation ZIP passed its structure/integrity checks and all three native integration phases; its contents match the final plugin source.
+- The real KOReader integration run passed `play`, `reopen` and `reader`. It exercises both tutorials, full refresh controls, four successive rotations in the file browser and book reader, input after rotation, unchanged progress, solution-view controls and changing success messages.
+- Native framebuffer captures were visually checked for the board, device settings, tutorial feedback and completion in landscape, and the success notification. [Screenshots](screens/README.md)
+
+These runs validate KOReader integration on desktop. Physical e-ink ghost removal, frontlight adjustment and hardware buttons still require an e-reader test.
+
+```sh
+luajit tests/engine.lua
+luajit tests/ui.lua
+luajit tests/tutorial.lua
+luajit tests/device_settings.lua
+luajit tests/layout_controls.lua
+python3 tools/package.py --out /tmp/doplo-release
+python3 tools/test_koreader.py /path/to/koreader \
+  --zip /tmp/doplo-release/doplo-v1.2.0.koplugin.zip \
+  --screens /tmp/doplo-screens
+```
+
+---
+
 # Version 1.1.0 verification
 
 ## Documentation and screenshot refresh — 2026-11-18
@@ -60,7 +90,7 @@ The release was tested with the official Linux x86-64 builds of **KOReader v2025
 
 ## Running the tests yourself
 
-The engine tests use LuaJIT 2.1, including its built-in `bit` module. Desktop tests require Python 3 and an extracted official KOReader Linux build. Pass the directory containing **both** `reader.lua` and `luajit`. To reproduce this archived report, run the commands below from the repository root at tag `v1.0.0`. For the current version, use the 1.1.0 commands above.
+The engine tests use LuaJIT 2.1, including its built-in `bit` module. Desktop tests require Python 3 and an extracted official KOReader Linux build. Pass the directory containing **both** `reader.lua` and `luajit`. To reproduce this archived report, run the commands below from the repository root at tag `v1.0.0`. For the current version, use the 1.2.0 commands above.
 
 ```sh
 luajit tests/engine.lua

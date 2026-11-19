@@ -1,0 +1,27 @@
+---
+description: Write readable, maintainable Doplo code that another developer can confidently change.
+alwaysApply: true
+---
+
+# Maintainable code
+
+- Optimize for the developer reading and changing the code, not for the fewest characters.
+- Use descriptive names such as `selectedCell`, `puzzle`, `button`, and `previousValue`. Avoid names like `a`, `b`, `g`, or `p` for application concepts. Conventional coordinates such as `x` and `y` are fine.
+- Use consistent indentation, spaces around operators, and blank lines between functions and logical steps. Put statements and conditional bodies on separate lines.
+- Keep functions focused. Extract named helpers when a function mixes responsibilities or needs an explanation of what a block does.
+- Avoid three levels of nested conditions. Prefer guard clauses, early returns, and small helpers. Do not replace nesting with dense boolean tricks or chains of ternary-style expressions.
+- Make state changes and side effects explicit. Keep presentation, puzzle rules, persistence, and device integration in appropriate modules.
+- Use comments to explain a constraint or a decision; make the code itself explain the operation.
+- When changing existing code, improve unclear names and structure in the affected area. Avoid unrelated rewrites and preserve public interfaces and save formats unless the task requires otherwise.
+- Keep test code readable too. Cover meaningful behavior and failure cases rather than mirroring implementation details.
+- Keep generated data separate from hand-written code; compact generated puzzle banks are acceptable.
+
+For example, guard against missing input before doing the work:
+
+```lua
+if not selectedCell then
+    return
+end
+
+refreshCell(selectedCell)
+```

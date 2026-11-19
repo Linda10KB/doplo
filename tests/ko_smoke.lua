@@ -28,7 +28,7 @@ local function touch(b, ges)
     ))
 end
 local function button(w, id)
-    for _, b in ipairs(w.a.buttons) do
+    for _, b in ipairs(w.geometry.buttons) do
         if b.id == id then
             touch(b)
             return
@@ -55,6 +55,53 @@ local function capture(name)
     UI:_repaint()
     Device.screen.bb:writePNG(os.getenv("DOPLO_SCREENS") .. "/" .. name .. ".png")
 end
+local function rotateAndRestore(window)
+    local initialRotation = Device.screen:getRotationMode()
+    local originalWidth, originalHeight = window.dimen.w, window.dimen.h
+    local currentGame = window.game
+    local selectedCell, pencilMode = currentGame.selected, currentGame.pencil
+    local historySize = #currentGame.history
+    for turn = 1, 4 do
+        button(window, "device")
+        choose("Rotate 90°")
+        UI:_repaint()
+        assert(top() == window)
+        assert(Device.screen:getRotationMode() == (initialRotation + turn) % 4)
+        assert(window.dimen.w == Device.screen:getWidth())
+        assert(window.dimen.h == Device.screen:getHeight())
+        assert(window.game == currentGame and currentGame.selected == selectedCell)
+        assert(currentGame.pencil == pencilMode and #currentGame.history == historySize)
+        button(window, "device")
+        choose("Refresh screen")
+        assert(top() == window)
+        if turn == 1 then
+            assert(window.dimen.w == originalHeight and window.dimen.h == originalWidth)
+            capture("rotated-" .. phase)
+        end
+    end
+    assert(window.dimen.w == originalWidth and window.dimen.h == originalHeight)
+end
+
+local function practice(window, variant, answers)
+    local game = window.game
+    local selectedCell, historySize = game.selected, #game.history
+    button(window, "help")
+    choose(variant)
+    capture(variant == "Doplo" and "tutorial-doplo" or "tutorial-plus")
+    choose("3")
+    assert(top().title:find("Not quite.", 1, true))
+    capture(variant == "Doplo" and "tutorial-doplo-feedback" or "tutorial-plus-feedback")
+    for index, answer in ipairs(answers) do
+        choose(answer)
+        assert(top().title:find("Correct!", 1, true))
+        choose(index == #answers and "Controls" or "Next")
+    end
+    capture("tutorial-controls-" .. phase)
+    choose("Back to puzzle")
+    assert(top() == window and window.game == game)
+    assert(game.selected == selectedCell and #game.history == historySize)
+end
+
 local function idfile(what, data)
     local path = os.getenv("KO_HOME") .. "/test-" .. what
     local f = assert(io.open(path, data and "w" or "r"))
@@ -123,6 +170,7 @@ local function run()
     local layout = require("doplo/layout")
     if phase == "reader" then
         assert(w.game.p.n == 5)
+        rotateAndRestore(w)
         button(w, "close")
         assert(not host.doplo.window)
         return
@@ -131,6 +179,8 @@ local function run()
         assert(w.id == idfile("classic") and w.game.p.n == 5)
         assert(w.game.notes[w.game.selected] ~= 0 and w.game.pencil)
         capture("landscape")
+        practice(w, "Doplo Plus", { "5", "3 · 3 · 9", "3 · 12", "15" })
+        rotateAndRestore(w)
         button(w, "close")
         assert(not host.doplo.window)
         return
@@ -139,7 +189,7 @@ local function run()
     assert(g.p.n == 5 and g.p.level == "Easy" and g:filled() == 0 and g.p.prefilled == false)
     idfile("classic", w.id)
     local i = g.selected
-    touch(layout.cell(w.a, i))
+    touch(layout.cell(w.geometry, i))
     button(w, "v1")
     assert(g.board[i] == 1)
     button(w, "v0")
@@ -159,16 +209,22 @@ local function run()
     UI:sendEvent(Event:new("KeyPress", Key:new("RPgBack", {})))
     assert(g.selected == i)
     capture("doplo-5x5")
+    button(w, "device")
+    capture("device-settings")
+    choose("Back to puzzle")
+    rotateAndRestore(w)
+    practice(w, "Doplo", { "2", "5", "0" })
+    practice(w, "Doplo Plus", { "5", "3 · 3 · 9", "3 · 12", "15" })
     local bb = require("ffi/blitbuffer")
     local mono = bb.new(w.dimen.w, w.dimen.h, bb.TYPE_BB8)
     w:paintTo(mono)
-    local b = layout.cell(w.a, 1)
+    local b = layout.cell(w.geometry, 1)
     assert(mono:getPixel(b.x, b.y):getColor8().a < 100 and mono:getPixel(0, 0):getColor8().a == 255)
     mono:free()
     button(w, "check")
     assert(top().text:find("consistent", 1, true))
     UI:close(top())
-    touch(layout.cell(w.a, i), "hold")
+    touch(layout.cell(w.geometry, i), "hold")
     choose("Back")
     button(w, "hint")
     while w.job do
@@ -183,6 +239,11 @@ local function run()
     choose("Show solution")
     choose("Show solution")
     assert(w.reveal and g.board[i] == -1)
+    button(w, "device")
+    choose("Refresh screen")
+    button(w, "help")
+    choose("Back to puzzle")
+    assert(w.reveal and top() == w)
     button(w, "v3")
     assert(g.board[i] == -1)
     button(w, "game")
@@ -221,22 +282,22 @@ local function run()
     pause()
     assert(w.game.p.n == 12 and w.game.p.level == "Hard" and w.game:filled() == 0)
     capture("doplo-plus-12x12")
-    local corner = layout.cell(w.a, 144)
+    local corner = layout.cell(w.geometry, 144)
     touch(corner)
-    assert(w.game.selected == 144 and w.a.span == 12)
+    assert(w.game.selected == 144 and w.geometry.span == 12)
     button(w, "pencil")
     button(w, "v1")
     button(w, "v8")
     button(w, "v0")
     capture("doplo-plus-detail")
-    touch(w.a.detail)
+    touch(w.geometry.detail)
     assert(top().title:find("Pencil: ■, 1, 8", 1, true))
     capture("doplo-input-dialog")
     choose("2")
     assert(top().title:find("Pencil: ■, 1, 2, 8", 1, true))
     choose("Back")
     UI:sendEvent(Event:new("KeyPress", Key:new("RPgFwd", {})))
-    assert(w.game.selected == 1 and w.a.span == 12 and w.a.firstCol == 1 and w.a.firstRow == 1)
+    assert(w.game.selected == 1 and w.geometry.span == 12 and w.geometry.firstCol == 1 and w.geometry.firstRow == 1)
     local generator = require("doplo/generator")
     local privateRandom = generator.random
     generator.random = function()
@@ -257,11 +318,16 @@ local function run()
     -- Complete this board via the public gestures and check the solved message.
     for pos, v in ipairs(w.game.p.solution) do
         if w.game.p.givens[pos] == -1 then
-            touch(layout.cell(w.a, pos))
+            touch(layout.cell(w.geometry, pos))
             button(w, "v" .. v)
         end
     end
     assert(w.game:solved() and top().text:find("Solved!", 1, true))
+    local firstCompliment = top().text
+    capture("celebration")
+    UI:close(top())
+    button(w, "check")
+    assert(top().text ~= firstCompliment and top().text:find("Solved!", 1, true))
     UI:close(top())
     button(w, "game")
     choose("Saved puzzles")
