@@ -2,7 +2,6 @@
 local modulePath = "doplo.koplugin/doplo/celebration.lua"
 local complimentCount = 616
 local historyKey = "celebration_history"
-local prefix = "Solved! Helemaal goed.\n\n"
 
 local function copy(value)
     if type(value) ~= "table" then
@@ -75,9 +74,7 @@ local function loadCelebration(entropy, entropyTracker)
 end
 
 local function nextCompliment(celebration, settings)
-    local message = celebration.next(settings)
-    assert(message:sub(1, #prefix) == prefix)
-    local compliment = message:sub(#prefix + 1)
+    local compliment = celebration.next(settings)
     assert(#compliment > 10 and not compliment:find("\n", 1, true))
     assert(settings.values[historyKey].last == compliment)
     assert(settings.values[historyKey].seen[compliment] == true)

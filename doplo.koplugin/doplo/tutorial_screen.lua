@@ -239,7 +239,9 @@ end
 
 function TutorialScreen.show(parent, practice)
     local window = TutorialScreen:new({ parent = parent, practice = practice })
-    UIManager:show(window)
+    -- Closing the picker queues a refresh of only its dialog area. Explicitly
+    -- refresh the whole display when replacing the puzzle with practice.
+    UIManager:show(window, "ui")
     return window
 end
 

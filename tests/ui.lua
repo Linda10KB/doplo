@@ -482,7 +482,7 @@ test("different congratulations for completion, Check, undo/redo and reloading",
 
     local function recordCongratulations()
         local text = top().text
-        assert(text:find("Solved!", 1, true))
+        assert(text == settingValues.celebration_history.last, "Expected the drawn compliment")
         assert(not congratulations[text], "Repeated congratulation: " .. text)
         congratulations[text] = true
         ui:close(top())

@@ -1,3 +1,13 @@
+# How to play refresh fix — 2026-11-23
+
+Opening practice now explicitly requests a refresh of the whole display. Previously, closing the variant picker queued a refresh of only the dialog rectangle. KOReader drew the complete tutorial into its framebuffer but sent only that rectangle to the display, leaving parts of the puzzle visible on e-ink.
+
+The native regression test observes refresh rectangles reaching KOReader's SDL framebuffer driver. It fails on the original code when opening Doplo practice and passes with the fix. It checks opening both variants, feedback, step changes and returning to the puzzle, including landscape and practice opened from solution view. The player's board, selection, history and solution-view state are preserved.
+
+The rebuilt installation ZIP passed all three KOReader v2025.10 integration phases (`play`, `reopen`, `reader`) and all four storage groups. UI, tutorial, layout, device-settings, sleep-cover and celebration tests passed. The compliment tests were updated to match the existing plain-text return value, replacing their obsolete `Solved!` prefix expectation. Portrait and landscape tutorial captures were visually checked. Physical Kobo verification remains to be done.
+
+---
+
 # Version 1.3.0 verification — 2026-11-23
 
 Verified using the official **KOReader v2025.10 Linux x86-64** build and its bundled LuaJIT:

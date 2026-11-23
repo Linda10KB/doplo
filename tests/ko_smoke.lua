@@ -56,6 +56,26 @@ local function capture(name)
     Device.screen.bb:writePNG(os.getenv("DOPLO_SCREENS") .. "/" .. name .. ".png")
 end
 
+local function repaintFullscreen(context)
+    local screen = Device.screen
+    local originalRefresh = screen.refreshFullImp
+    local refreshedFullscreen = false
+    -- All SDL refresh modes end here. A correct framebuffer alone does not
+    -- prove that the e-ink panel received the changed pixels outside a dialog.
+    screen.refreshFullImp = function(self, x, y, width, height, ...)
+        if x == 0 and y == 0 and width == self:getWidth() and height == self:getHeight() then
+            refreshedFullscreen = true
+        end
+        return originalRefresh(self, x, y, width, height, ...)
+    end
+    local ok, repaintError = pcall(function()
+        UI:_repaint()
+    end)
+    screen.refreshFullImp = originalRefresh
+    assert(ok, repaintError)
+    assert(refreshedFullscreen, context .. " must refresh the whole display, not just the closed dialog")
+end
+
 local function screensaverPreferences()
     local preferences = {}
     for key, value in pairs(G_reader_settings.data) do
@@ -135,12 +155,14 @@ end
 
 local function practice(window, variant)
     local game = window.game
+    local reveal = window.reveal
     local selectedCell, historySize = game.selected, #game.history
     local originalBoard = require("doplo/model").copy(game.board)
     button(window, "help")
     choose(variant)
     local tutorial = top()
     assert(tutorial.name == "doplo_tutorial")
+    repaintFullscreen("Opening " .. variant .. " practice")
     local exercise = tutorial.practice
     local layout = require("doplo/layout")
     capture(variant == "Doplo" and "tutorial-doplo" or "tutorial-plus")
@@ -149,6 +171,7 @@ local function practice(window, variant)
     button(tutorial, "v3")
     assert(exercise.feedback:find("Try again.", 1, true))
     assert(exercise.game.board[exercise:current().cell] == -1)
+    repaintFullscreen("Practice feedback")
     capture(variant == "Doplo" and "tutorial-doplo-feedback" or "tutorial-plus-feedback")
     for stepIndex, step in ipairs(exercise.lesson.steps) do
         touch(layout.cell(tutorial.geometry, step.cell))
@@ -166,11 +189,14 @@ local function practice(window, variant)
             assert(require("doplo/model").equal(exercise.game.board, practiceBoard))
         end
         button(tutorial, "next")
+        repaintFullscreen("Advancing practice")
     end
     assert(exercise.complete and exercise.game:solved())
     capture("tutorial-controls-" .. phase)
     button(tutorial, "close")
+    repaintFullscreen("Returning to the puzzle")
     assert(top() == window and window.game == game)
+    assert(window.reveal == reveal)
     assert(game.selected == selectedCell and #game.history == historySize)
     assert(require("doplo/model").equal(game.board, originalBoard))
 end
@@ -326,6 +352,7 @@ local function run()
     button(w, "help")
     choose("Back to puzzle")
     assert(w.reveal and top() == w)
+    practice(w, "Doplo")
     button(w, "v3")
     assert(g.board[i] == -1)
     button(w, "game")
@@ -404,12 +431,14 @@ local function run()
             button(w, "v" .. v)
         end
     end
-    assert(w.game:solved() and top().text:find("Solved!", 1, true))
+    assert(w.game:solved())
+    assert(top().text == host.doplo.settings:readSetting("celebration_history").last)
     local firstCompliment = top().text
     capture("celebration")
     UI:close(top())
     button(w, "check")
-    assert(top().text ~= firstCompliment and top().text:find("Solved!", 1, true))
+    assert(top().text ~= firstCompliment)
+    assert(top().text == host.doplo.settings:readSetting("celebration_history").last)
     idfile("celebrations", require("dump")(
         host.doplo.settings:readSetting("celebration_history"), nil, true))
     UI:close(top())
