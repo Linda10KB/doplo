@@ -55,6 +55,57 @@ local function capture(name)
     UI:_repaint()
     Device.screen.bb:writePNG(os.getenv("DOPLO_SCREENS") .. "/" .. name .. ".png")
 end
+
+local function screensaverPreferences()
+    local preferences = {}
+    for key, value in pairs(G_reader_settings.data) do
+        if key:find("screensaver", 1, true) then
+            preferences[key] = value
+        end
+    end
+    return require("dump")(preferences, nil, true)
+end
+
+local function sleepAndWake(window, foreground)
+    foreground = foreground or window
+    local screensaver = require("ui/screensaver")
+    local attachment = assert(window.owner.sleepCover, "Doplo sleep cover was not attached")
+    local preferences = screensaverPreferences()
+    local originalRotation = Device.screen:getRotationMode()
+    local currentGame = window.game
+    local selectedCell, historySize = currentGame.selected, #currentGame.history
+    for cycle = 1, 2 do
+        Device:simulateSuspend()
+        UI:_repaint()
+        assert(screensaver.image_file == window.owner.path .. "/resources/doplo-cover.png")
+        assert(screensaver.screensaver_type == "cover" and screensaver.show_message == false)
+        assert(top() == screensaver.screensaver_widget and Device.screen_saver_mode)
+        if cycle == 1 then
+            capture("sleep-cover-" .. phase)
+        end
+        Device:simulateResume()
+        UI:_repaint()
+        assert(top() == foreground and not Device.screen_saver_mode)
+        assert(Device.screen:getRotationMode() == originalRotation)
+        assert(window.game == currentGame and currentGame.selected == selectedCell)
+        assert(#currentGame.history == historySize)
+        assert(screensaverPreferences() == preferences)
+    end
+    return attachment.originalSetup
+end
+
+local function checkCoverRestored(host, originalSetup)
+    local screensaver = require("ui/screensaver")
+    assert(not host.doplo.sleepCover and screensaver.setup == originalSetup)
+    screensaver:setup()
+    assert(screensaver.image_file ~= host.doplo.path .. "/resources/doplo-cover.png")
+    screensaver:show()
+    UI:_repaint()
+    screensaver:close()
+    UI:_repaint()
+    assert(top() == host and not Device.screen_saver_mode)
+end
+
 local function rotateAndRestore(window)
     local initialRotation = Device.screen:getRotationMode()
     local originalWidth, originalHeight = window.dimen.w, window.dimen.h
@@ -82,24 +133,46 @@ local function rotateAndRestore(window)
     assert(window.dimen.w == originalWidth and window.dimen.h == originalHeight)
 end
 
-local function practice(window, variant, answers)
+local function practice(window, variant)
     local game = window.game
     local selectedCell, historySize = game.selected, #game.history
+    local originalBoard = require("doplo/model").copy(game.board)
     button(window, "help")
     choose(variant)
+    local tutorial = top()
+    assert(tutorial.name == "doplo_tutorial")
+    local exercise = tutorial.practice
+    local layout = require("doplo/layout")
     capture(variant == "Doplo" and "tutorial-doplo" or "tutorial-plus")
-    choose("3")
-    assert(top().title:find("Not quite.", 1, true))
+    button(tutorial, "next")
+    assert(exercise.step == 1, "Next must wait for an entry")
+    button(tutorial, "v3")
+    assert(exercise.feedback:find("Try again.", 1, true))
+    assert(exercise.game.board[exercise:current().cell] == -1)
     capture(variant == "Doplo" and "tutorial-doplo-feedback" or "tutorial-plus-feedback")
-    for index, answer in ipairs(answers) do
-        choose(answer)
-        assert(top().title:find("Correct!", 1, true))
-        choose(index == #answers and "Controls" or "Next")
+    for stepIndex, step in ipairs(exercise.lesson.steps) do
+        touch(layout.cell(tutorial.geometry, step.cell))
+        button(tutorial, "v" .. exercise.game.p.solution[step.cell])
+        assert(exercise.accepted)
+        assert(exercise.game.board[step.cell] == exercise.game.p.solution[step.cell])
+        if stepIndex == 1 then
+            local practiceBoard = require("doplo/model").copy(exercise.game.board)
+            local feedback = exercise.feedback
+            window.dirty = true
+            sleepAndWake(window, tutorial)
+            assert(not window.dirty, "Suspending practice must flush the underlying game")
+            assert(tutorial.practice == exercise and exercise.step == 1 and exercise.accepted)
+            assert(exercise.feedback == feedback)
+            assert(require("doplo/model").equal(exercise.game.board, practiceBoard))
+        end
+        button(tutorial, "next")
     end
+    assert(exercise.complete and exercise.game:solved())
     capture("tutorial-controls-" .. phase)
-    choose("Back to puzzle")
+    button(tutorial, "close")
     assert(top() == window and window.game == game)
     assert(game.selected == selectedCell and #game.history == historySize)
+    assert(require("doplo/model").equal(game.board, originalBoard))
 end
 
 local function idfile(what, data)
@@ -167,22 +240,31 @@ local function run()
             .. " "
             .. tostring(top().title)
     )
+    local originalScreensaverSetup = sleepAndWake(w)
     local layout = require("doplo/layout")
     if phase == "reader" then
         assert(w.game.p.n == 5)
         rotateAndRestore(w)
         button(w, "close")
         assert(not host.doplo.window)
+        checkCoverRestored(host, originalScreensaverSetup)
         return
     end
     if phase == "reopen" then
         assert(w.id == idfile("classic") and w.game.p.n == 5)
         assert(w.game.notes[w.game.selected] ~= 0 and w.game.pencil)
+        local savedHistory = host.doplo.settings:readSetting("celebration_history")
+        assert(require("dump")(savedHistory, nil, true) == idfile("celebrations"),
+            "Compliment history changed across a real KOReader restart")
+        require("doplo/celebration").next(host.doplo.settings)
+        local continuedHistory = host.doplo.settings:readSetting("celebration_history")
+        assert(not savedHistory.seen[continuedHistory.last], "Restart repeated a seen compliment")
         capture("landscape")
-        practice(w, "Doplo Plus", { "5", "3 · 3 · 9", "3 · 12", "15" })
+        practice(w, "Doplo Plus")
         rotateAndRestore(w)
         button(w, "close")
         assert(not host.doplo.window)
+        checkCoverRestored(host, originalScreensaverSetup)
         return
     end
     local g = w.game
@@ -213,8 +295,8 @@ local function run()
     capture("device-settings")
     choose("Back to puzzle")
     rotateAndRestore(w)
-    practice(w, "Doplo", { "2", "5", "0" })
-    practice(w, "Doplo Plus", { "5", "3 · 3 · 9", "3 · 12", "15" })
+    practice(w, "Doplo")
+    practice(w, "Doplo Plus")
     local bb = require("ffi/blitbuffer")
     local mono = bb.new(w.dimen.w, w.dimen.h, bb.TYPE_BB8)
     w:paintTo(mono)
@@ -328,6 +410,8 @@ local function run()
     UI:close(top())
     button(w, "check")
     assert(top().text ~= firstCompliment and top().text:find("Solved!", 1, true))
+    idfile("celebrations", require("dump")(
+        host.doplo.settings:readSetting("celebration_history"), nil, true))
     UI:close(top())
     button(w, "game")
     choose("Saved puzzles")
@@ -337,6 +421,7 @@ local function run()
     w:onSuspend()
     button(w, "close")
     assert(not host.doplo.window)
+    checkCoverRestored(host, originalScreensaverSetup)
 end
 local co = coroutine.create(run)
 local function step()

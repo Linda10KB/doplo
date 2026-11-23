@@ -16,9 +16,13 @@ Tap a cell, then a digit, **■** or **Erase**. Use **Pencil** to add or remove 
 
 The enlarged detail cell shows all pencil marks in the selected cell, with its row and column clues alongside. Tap the detail cell or hold a board cell to open the larger input dialog. The whole board stays visible, and the edge clues use larger black digits. **Device settings** opens brightness controls on supported devices, rotates the screen 90° at a time, or requests a full flashing refresh for e-ink ghosting. Rotation keeps your current entries, notes and selection. Page-turn buttons move the board selection one cell backward or forward.
 
-The separate **How to play** button offers guided practice for **Doplo** and **Doplo Plus**, with answer choices, explanations and retries. It does not change your current puzzle. Both **How to play** and **Device settings** remain available while viewing a solution.
+The separate **How to play** button opens an interactive example puzzle for **Doplo** or **Doplo Plus**. Follow the explanation, tap the highlighted cell and enter a digit or block on the board yourself. Each step explains why the entry follows from a row, column or edge clue; feedback helps you retry before continuing. Practice does not change your current puzzle. Both **How to play** and **Device settings** remain available while viewing a solution.
 
-Completed puzzles get one of sixteen enthusiastic Dutch compliments. The sequence is remembered across sessions, so messages do not repeat until every compliment has had a turn.
+Completed puzzles get one of 616 different Dutch compliments, drawn randomly. Doplo saves which compliments you have seen, so none repeats until the whole collection has had a turn, even after restarting. Each device draws independently and every new round has a new random order.
+
+## Sleep cover
+
+On devices with KOReader sleep-screen support, putting the e-reader to sleep while Doplo is open shows the bundled rainbow Doplo cover. Closing the game restores your usual sleep screen. Your saved KOReader settings remain unchanged. Monochrome screens show the image in grayscale; devices without KOReader sleep-screen support keep their native behavior.
 
 ## Rules
 
@@ -38,4 +42,4 @@ All bank puzzles have a unique solution, both with and without givens. Difficult
 
 Doplo saves every change locally. To copy your games, close KOReader and copy `settings/doplo-games/` and `settings/doplo.lua` from the KOReader profile.
 
-Version 1.2.0. AGPL-3.0-or-later. [License](LICENSE) · [Sources](SOURCES.md)
+Version 1.3.0. AGPL-3.0-or-later. [License](LICENSE) · [Sources](SOURCES.md)

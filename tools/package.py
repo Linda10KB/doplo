@@ -13,7 +13,8 @@ args.out.mkdir(parents=True, exist_ok=True)
 meta = (plugin / "_meta.lua").read_text(encoding="utf-8")
 version = re.search(r'^\s*version\s*=\s*"([0-9.]+)"', meta, re.MULTILINE).group(1)
 target = args.out / f"doplo-v{version}.koplugin.zip"
-files = sorted((*plugin.rglob("*.lua"), plugin / "LICENSE", plugin / "README.md", plugin / "SOURCES.md"))
+resources = [path for path in (plugin / "resources").rglob("*") if path.is_file()]
+files = sorted((*plugin.rglob("*.lua"), *resources, plugin / "LICENSE", plugin / "README.md", plugin / "SOURCES.md"))
 with ZipFile(target, "w") as archive:
     for path in files:
         entry = ZipInfo(path.relative_to(root).as_posix(), (2026, 1, 1, 0, 0, 0))
@@ -23,4 +24,5 @@ with ZipFile(target, "w") as archive:
 with ZipFile(target) as archive:
     assert archive.testzip() is None
     assert "doplo.koplugin/main.lua" in archive.namelist()
+    assert "doplo.koplugin/resources/doplo-cover.png" in archive.namelist()
 print(target.resolve())

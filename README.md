@@ -13,7 +13,7 @@ Doplo Plus on a Kobo, at a desk and in low light. The low-light photo shows an e
 ## Installation
 
 1. Close KOReader and connect your Kobo to your computer via USB.
-2. Extract **doplo-v1.2.0.koplugin.zip** and copy the **doplo.koplugin** folder to **.adds/koreader/plugins/**. The full path on the Kobo is `.adds/koreader/plugins/doplo.koplugin/main.lua`. Enable hidden files in your file manager if the `.adds` folder is hidden.
+2. Extract **doplo-v1.3.0.koplugin.zip** and copy the **doplo.koplugin** folder to **.adds/koreader/plugins/**. The full path on the Kobo is `.adds/koreader/plugins/doplo.koplugin/main.lua`. Enable hidden files in your file manager if the `.adds` folder is hidden.
 3. Safely eject the Kobo. Start KOReader and open **Tools → Doplo** from the top menu. The menu is available in the file browser and while reading a book.
 
 You can also copy the `doplo.koplugin` folder directly from this repository. For other KOReader installations, use the corresponding `plugins` folder. If Doplo was previously disabled, enable it under **Tools → More tools → Plugin management** and restart KOReader.
@@ -26,18 +26,24 @@ You can also copy the `doplo.koplugin` folder directly from this repository. For
 | Track candidates | Turn **Pencil** on. Tap a digit or block to add or remove a candidate. Turn **Pencil** off to enter a final value. |
 | Read pencil marks | The enlarged detail cell shows all notes in the selected cell, with large row and column clues beside it. Tap the detail cell or hold a board cell to open the larger input dialog. The whole board stays visible. |
 | Adjust the device | **Device settings** groups **Brightness** (on supported devices), **Rotate 90°**, and **Refresh screen**. Refresh requests a full flashing refresh to clear e-ink ghosting. Rotation preserves your entries, pencil marks and selection. |
-| Learn to play | The separate **How to play** button opens guided practice for **Doplo** or **Doplo Plus**. Answer short exercises, get feedback, retry or go back. Your current puzzle stays untouched. |
+| Learn to play | The separate **How to play** button opens a real practice board for **Doplo** or **Doplo Plus**. Each step highlights a cell and explains how its row, column or edge clue determines the entry. Tap the cell and enter a digit or block yourself, get feedback and continue. Your current puzzle stays untouched. |
 | Start with an empty board | Under **Game → New puzzle**, choose a variant and size, then **Prefilled cells: Off** or **On**. This setting applies to every difficulty level and is remembered. The default is **Off**. Existing games keep their progress. |
 | Move around the board | Tap the target cell. Page-turn buttons move the selection in reading order, wrapping at the beginning and end. These bindings apply while the game window is open. |
 | Take back a move | **Undo** and **Redo** also preserve pencil marks. Making a new move clears the redo history. |
-| Check the board | **Check** reports the first rule violation it finds. On a partially filled board, it can also identify an entry that rules out the unique solution. A full board is marked **Solved** only after all lines, sums and givens have been checked. Success messages cycle through sixteen exuberant Dutch compliments, remembering the last one across sessions. |
+| Check the board | **Check** reports the first rule violation it finds. On a partially filled board, it can also identify an entry that rules out the unique solution. A full board is marked **Solved** only after all lines, sums and givens have been checked. Success messages draw randomly from 616 different Dutch compliments. Doplo remembers the compliments already shown across sessions, uses every compliment before repeating, and starts each new round in a fresh random order. Each device draws independently. |
 | Use a hint | **Hint** shows a cell, value and explanation. **Place value** applies the move. If an entry conflicts with the clues, the hint directs you to **Check**. |
 | View the solution | **Game → Show solution** opens a read-only view. **Return** takes you back to your own board. |
 | Open another game | **Game → New puzzle** lets you choose the variant, size and difficulty. **Game → Saved puzzles** shows previous games, their progress and when they were last changed. |
 
+## Sleep cover
+
+While Doplo is open, supported KOReader devices show the bundled rainbow **doplo** cover when going to sleep. Closing Doplo restores the normal book cover or other sleep-screen preference. The plugin does not change your saved KOReader sleep-screen settings. On monochrome e-readers the cover is displayed in grayscale. Devices that do not support KOReader sleep screens keep their native behavior.
+
+<img src="doplo.koplugin/resources/doplo-cover.png" width="270" alt="Rainbow Doplo cover with five stars and playful Dutch review stickers">
+
 ## Screenshots
 
-Captured from version 1.2.0 running in KOReader's Linux/SDL build. [Capture details and reproduction instructions](docs/screens/README.md)
+Captured from version 1.3.0 running in KOReader's Linux/SDL build. [Capture details and reproduction instructions](docs/screens/README.md)
 
 | Doplo 5×5 | Doplo Plus 12×12 |
 | --- | --- |
@@ -98,7 +104,9 @@ After every value, note, undo and redo, Doplo saves progress to a separate file 
 | Grid generation and difficulty rating | `doplo/generator.lua`, `doplo/difficulty.lua` |
 | Verified puzzle bank | `doplo/bank.lua` |
 | KOReader controls, layout and drawing | `doplo/screen.lua`, `doplo/layout.lua`, `doplo/paint.lua` |
-| Device controls, guided practice and success messages | `doplo/device_settings.lua`, `doplo/tutorial.lua`, `doplo/celebration.lua` |
+| Device controls and sleep cover | `doplo/device_settings.lua`, `doplo/sleep_cover.lua` |
+| Guided practice | `doplo/tutorial.lua`, `doplo/tutorial_screen.lua`, `doplo/tutorial_layout.lua` |
+| Random compliments and their history | `doplo/celebration.lua` |
 | Storage and recovery | `doplo/store.lua` |
 
 The decision procedure for a single line tracks the position, used digits and current sum or Plus run. It returns the possible values for each cell. The board solver intersects these possibilities from rows and columns, repeating until no more candidates are eliminated. If choices remain, it branches on the cell with the fewest candidates. Completed boards are checked by a separate implementation. The generator uses permutations of cyclic Latin squares, covering a subset of all valid completed grids.
@@ -111,13 +119,15 @@ Run these commands from the repository root to execute the tests and build the i
 luajit tests/engine.lua
 luajit tests/ui.lua
 luajit tests/tutorial.lua
+luajit tests/celebration.lua
+luajit tests/sleep_cover.lua
 luajit tests/device_settings.lua
 luajit tests/layout_controls.lua
 python3 tools/package.py --out /tmp/doplo-release
-python3 tools/test_koreader.py /path/to/koreader --zip /tmp/doplo-release/doplo-v1.2.0.koplugin.zip
+python3 tools/test_koreader.py /path/to/koreader --zip /tmp/doplo-release/doplo-v1.3.0.koplugin.zip
 ```
 
-Version 1.2.0 passes all 17 engine test groups, checks of the full puzzle bank, UI and tutorial tests, device-control and layout checks, and the native storage and installation tests on KOReader v2025.10 for Linux/SDL. The screenshots above were captured during native integration testing. Rotation was checked from both the file browser and the book reader. Refresh behavior on a physical e-ink panel and physical page-turn buttons still need device testing. The controls are designed for touch devices. Undo history retains the last 200 changes per puzzle. [Test instructions and results](docs/VERIFICATION.md)
+Version 1.3.0 passes all 17 engine test groups, checks of the full puzzle bank, UI, interactive tutorial, random compliment history, sleep-cover, device-control and layout tests, and the native storage and installation tests on KOReader v2025.10 for Linux/SDL. The screenshots above were captured during native integration testing. Rotation was checked from both the file browser and the book reader. Sleep-screen transitions, refresh behavior on a physical e-ink panel and physical page-turn buttons still need device testing. The controls are designed for touch devices. Undo history retains the last 200 changes per puzzle. [Test instructions and results](docs/VERIFICATION.md)
 
 ## License
 

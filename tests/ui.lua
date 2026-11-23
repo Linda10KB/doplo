@@ -133,6 +133,12 @@ end
 function TextWidget:free() end
 
 package.loaded["ui/widget/textwidget"] = TextWidget
+local TextBoxWidget = TextWidget:extend({})
+function TextBoxWidget:getSize()
+    local lines = math.ceil(#self.text * self.face.size * 0.56 / self.width)
+    return { w = self.width, h = lines * self.face.size * 1.2 }
+end
+package.loaded["ui/widget/textboxwidget"] = TextBoxWidget
 
 local GameScreen = require("doplo/screen")
 local Model = require("doplo/model")
@@ -275,18 +281,39 @@ test("standalone help in play and solution views without changing the game", fun
         button("help")
         assert(top().title:find("How to play", 1, true))
         choose("Doplo")
-        choose("1")
-        assert(top().title:find("Not quite.", 1, true))
-        choose("2")
-        assert(top().title:find("Correct!", 1, true))
-        choose("Back to puzzle")
+        local tutorial = top()
+        assert(tutorial.name == "doplo_tutorial")
+        local practiceBuffer = newBuffer()
+        tutorial:paintTo(practiceBuffer)
+        local markedTarget = false
+        for _, text in ipairs(practiceBuffer.texts) do
+            markedTarget = markedTarget or text.text == "?"
+        end
+        assert(markedTarget, "The practice target needs a visible question mark")
+        tutorial:activateButton("v1")
+        assert(tutorial.practice.feedback:find("Try again.", 1, true))
+        tutorial:activateButton("v2")
+        assert(tutorial.practice.accepted and tutorial.practice.game.board[3] == 2)
+        practiceBuffer = newBuffer()
+        tutorial:paintTo(practiceBuffer)
+        for _, text in ipairs(practiceBuffer.texts) do
+            assert(text.text ~= "?", "An entered value replaces the target marker")
+        end
+        tutorial:activateButton("next")
+        assert(tutorial.practice.step == 2)
+        tutorial:activateButton("back")
+        assert(tutorial.practice.step == 1 and tutorial.practice.game.board[3] == -1)
+        tutorial:activateButton("close")
 
         button("help")
         choose("Doplo Plus")
-        choose("5")
-        choose("Next")
-        assert(top().title:find("Practice 2/4", 1, true))
-        choose("Back to puzzle")
+        tutorial = top()
+        tutorial:activateButton("v0")
+        tutorial:activateButton("next")
+        assert(tutorial.practice.step == 2)
+        tutorial:activateButton("restart")
+        assert(tutorial.practice.step == 1 and tutorial.practice.game.board[11] == -1)
+        tutorial:activateButton("close")
         assert(gameScreen.reveal == reveal)
     end
 
@@ -443,6 +470,8 @@ test("ready-puzzle coverage, cancellation and empty-start timeout fallback", fun
 end)
 
 test("different congratulations for completion, Check, undo/redo and reloading", function()
+    settingValues.celebration_history = nil
+    settingValues.last_celebration = nil
     local completionPuzzle = owner:ready(Model.config("classic", 5), "Easy")
     local completionGame = Game.new(completionPuzzle)
     completionGame.board = Model.copy(completionPuzzle.solution)
@@ -462,7 +491,7 @@ test("different congratulations for completion, Check, undo/redo and reloading",
 
     button("v" .. completionPuzzle.solution[1], completionScreen)
     assert(completionGame:solved())
-    local firstMessage = recordCongratulations()
+    recordCongratulations()
     button("check", completionScreen)
     recordCongratulations()
     button("check", completionScreen)
@@ -481,19 +510,16 @@ test("different congratulations for completion, Check, undo/redo and reloading",
     assert(not congratulations[reloadedMessage])
     congratulations[reloadedMessage] = true
 
-    -- Accept more compliments without changing this test, but reject a repeat
-    -- before the cycle returns to its first message.
-    local cycleRestarted = false
-    for _ = 1, 100 do
+    -- The round is random: every message gets a turn, then a fresh order starts.
+    local lastMessage = reloadedMessage
+    for _ = 6, 616 do
         button("check", completionScreen)
-        if top().text == firstMessage then
-            cycleRestarted = true
-            ui:close(top())
-            break
-        end
-        recordCongratulations()
+        lastMessage = recordCongratulations()
     end
-    assert(cycleRestarted, "The compliment cycle did not restart")
+    button("check", completionScreen)
+    assert(congratulations[top().text], "The compliment round did not restart")
+    assert(top().text ~= lastMessage, "The last compliment repeated at the round boundary")
+    ui:close(top())
 end)
 
 local function savePreview(path)

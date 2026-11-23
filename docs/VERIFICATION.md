@@ -1,3 +1,35 @@
+# Version 1.3.0 verification — 2026-11-23
+
+Verified using the official **KOReader v2025.10 Linux x86-64** build and its bundled LuaJIT:
+
+- All 17 engine groups passed, including independent checks of all 960 bank puzzles and saved-game compatibility.
+- All seven UI groups passed. Both practice boards use real cell input and preserve the player's game, including when opened from solution view.
+- Five tutorial groups passed: complete valid 5×5 and 7×7 boards, incorrect/correct entries, step gating, previous/restart navigation, isolated practice sessions and layout at five portrait/landscape sizes down to 320×480 and 480×320.
+- Six compliment groups passed: 616 unique texts (the original 16, all 100 supplied examples and 500 additional texts), complete random rounds without repeats, no immediate repeat at round boundaries, persisted history/RNG progress, different device orders, old-setting migration and recovery from damaged history or unavailable entropy. The collection and logic are together in `doplo/celebration.lua`.
+- Four sleep-cover groups passed: repeated sleeps, restoration, normal poweroff/reboot behavior, missing assets, unsupported devices and compatibility with another plugin's wrapper. No saved KOReader sleep-screen settings are changed.
+- Device and layout checks passed for all variants and sizes. All four native storage groups passed.
+- The final **1.3.0 installation ZIP** passed integrity checks; all 23 packaged files match the source, the generated PNG is included and no separate `compliments.lua` is shipped.
+- That ZIP passed all native integration phases: `play`, `reopen` and `reader`. These include actual SDL suspend/resume cycles both on the game and during guided practice, unchanged preferences and game progress, restoration of the normal sleep screen after closing Doplo, and compliment history surviving a separate KOReader process.
+- Native screenshots of the two practice boards, incorrect-entry feedback, the success message and the rainbow sleep cover were visually checked. The documented screenshots have been refreshed from the packaged run.
+
+Physical e-reader suspension, e-ink refresh/ghosting, frontlight adjustment and hardware buttons still require a device test. The native tests exercise KOReader's SDL simulator, not a physical Kobo.
+
+```sh
+luajit tests/engine.lua
+luajit tests/ui.lua
+luajit tests/tutorial.lua
+luajit tests/celebration.lua
+luajit tests/sleep_cover.lua
+luajit tests/device_settings.lua
+luajit tests/layout_controls.lua
+python3 tools/package.py
+python3 tools/test_koreader.py /path/to/koreader \
+  --zip dist/doplo-v1.3.0.koplugin.zip \
+  --screens /tmp/doplo-screens
+```
+
+---
+
 # Version 1.2.0 verification — 2026-11-19
 
 Verified with the official **KOReader v2025.10 Linux x86-64** build and its bundled LuaJIT:

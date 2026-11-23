@@ -7,6 +7,7 @@ local Info = require("ui/widget/infomessage")
 local Game = require("doplo/game")
 local Gen = require("doplo/generator")
 local Store = require("doplo/store")
+local SleepCover = require("doplo/sleep_cover")
 local Plugin = WidgetContainer:extend({ name = "doplo", is_doc_only = false })
 
 function Plugin:init()
@@ -38,6 +39,7 @@ function Plugin:activate(id, game)
         local Screen = require("doplo/screen")
         self.window = Screen:new({ owner = self, id = id, game = game })
         UI:show(self.window, "ui")
+        SleepCover.attach(self)
     end
 end
 function Plugin:start(p)

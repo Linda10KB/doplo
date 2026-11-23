@@ -15,6 +15,7 @@ local Paint = require("doplo/paint")
 local Celebration = require("doplo/celebration")
 local DeviceSettings = require("doplo/device_settings")
 local Tutorial = require("doplo/tutorial")
+local SleepCover = require("doplo/sleep_cover")
 local band = require("bit").band
 local DeviceScreen = Device.screen
 local GameScreen = InputContainer:extend({ name = "doplo_board", covers_fullscreen = true, stop_events_propagation = true })
@@ -226,6 +227,7 @@ end
 function GameScreen:onCloseWidget()
     self:stopJob()
     self.painter:clear()
+    SleepCover.detach(self.owner)
     self.owner.window = nil
 end
 

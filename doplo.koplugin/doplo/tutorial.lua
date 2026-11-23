@@ -1,80 +1,110 @@
 -- SPDX-License-Identifier: AGPL-3.0-or-later
+local Game = require("doplo/game")
+local Model = require("doplo/model")
 local Tutorial = {}
 
--- Practice uses its own small examples, never the player's current board.
+-- Each lesson completes one valid board. Its state is deliberately separate
+-- from the player's game and is never handed to the save store.
 local lessons = {
     classic = {
-        name = "Doplo",
-        exercises = {
+        solution = {
+            0, 1, 2, 3, 0,
+            3, 0, 1, 2, 0,
+            2, 0, 0, 1, 3,
+            1, 3, 0, 0, 2,
+            0, 2, 3, 0, 1,
+        },
+        steps = {
             {
-                prompt = "On a 5 × 5 board, every row and column has two blocks and the digits 1–3 once each."
-                    .. "\n\n■   1   ?   3   ■\n\nWhich digit is missing?",
-                choices = { "1", "2", "3" },
-                answer = "2",
-                explanation = "The missing digit is 2."
-                    .. " Each digit appears exactly once in every row and column.",
-                retry = "1 and 3 are already in this row. Each digit appears once.",
+                cell = 3, axis = "row", title = "Every digit once",
+                instruction = "Every row and column needs two blocks and the digits 1–3 once each. Row 1 already has 1 and 3. Fill the missing digit in C1.",
+                retry = "Look along row 1: 1 and 3 are already there. Which digit is missing?",
+                explanation = "Exactly: 2 completes the digits 1–3. The two black squares are blocks, not zeroes to add.",
             },
             {
-                prompt = "Only digits between the two blocks count toward the edge clue."
-                    .. "\n\n1   ■   2   3   ■\n\nWhat is this row's clue?",
-                choices = { "1", "5", "6" },
-                answer = "5",
-                explanation = "2 + 3 = 5."
-                    .. " The 1 is outside the blocks, so it does not count toward the sum.",
-                retry = "Start after the first block and stop at the second.",
+                cell = 6, axis = "row", title = "Between the blocks",
+                instruction = "The clue 3 beside row 2 adds only digits BETWEEN its blocks: 1 + 2. A2 is outside them. Fill A2 with the digit missing from this row.",
+                retry = "The edge clue ignores A2, but the row still needs all of 1, 2 and 3.",
+                explanation = "Yes: A2 is 3. It belongs in the row, but does not count toward the clue. Only 1 + 2 between the blocks counts.",
             },
             {
-                prompt = "The same rule works down a column. What if the blocks touch?"
-                    .. "\n\n1   ■   ■   2   3\n\nWhat is this row's clue?",
-                choices = { "0", "3", "6" },
-                answer = "0",
-                explanation = "There are no digits between the blocks, so the clue is 0."
-                    .. " Larger Doplo boards still use two blocks, with more digits.",
-                retry = "Count only digits strictly between the blocks.",
+                cell = 13, axis = "row", title = "A clue of zero",
+                instruction = "Row 3 has clue 0: nothing can lie between its blocks. One block is at B3. Fill C3 so the blocks touch. Tap the solid-square key to place a block.",
+                retry = "The row already contains 1, 2 and 3. Its second block must touch B3 to leave an empty gap.",
+                explanation = "Right: the blocks at B3 and C3 touch. No digits lie between them, so the clue is 0.",
+            },
+            {
+                cell = 22, axis = "row", title = "Use the edge clue",
+                instruction = "Row 5 has clue 5. Between its blocks are B5 and the digit 3. What belongs in B5 so those two digits add to 5? Fill it in the board.",
+                retry = "Only B5 and 3 lie between the blocks. Their sum must be 5.",
+                explanation = "Correct: 2 + 3 = 5. The 1 at the far right is outside the blocks and does not count.",
+            },
+            {
+                cell = 19, axis = "col", title = "Look down a column",
+                instruction = "The same rules work downward. Column D already contains 3, 2, 1 and one block. Fill D4 with what this column still needs.",
+                retry = "Column D has all three digits. Every column also needs two blocks.",
+                explanation = "That is the second block. D4 and D5 touch, matching the 0 clue above column D.",
+            },
+            {
+                cell = 16, axis = "row", title = "Finish your puzzle",
+                instruction = "One square remains. Row 4 contains two blocks and the digits 3 and 2. Fill A4 with its missing digit. Then every row AND column will obey the rules.",
+                retry = "Row 4 has 2 and 3. Which digit from 1–3 is missing?",
+                explanation = "You completed the whole board! Every row and column has two blocks, each digit once, and the correct sum between the blocks.",
             },
         },
     },
     plus = {
-        name = "Doplo Plus",
-        exercises = {
+        solution = {
+            1, 2, 0, 3, 0, 4, 5,
+            5, 1, 2, 0, 3, 0, 4,
+            4, 5, 1, 2, 0, 3, 0,
+            0, 4, 5, 1, 2, 0, 3,
+            0, 3, 0, 4, 5, 1, 2,
+            3, 0, 4, 5, 1, 2, 0,
+            2, 0, 3, 0, 4, 5, 1,
+        },
+        steps = {
             {
-                prompt = "On a 7 × 7 board, every row and column has two blocks and the digits 1–5 once each."
-                    .. "\n\n1   2   ■   3   ■   4   ?\n\nWhich digit is missing?",
-                choices = { "3", "5", "■" },
-                answer = "5",
-                explanation = "The missing digit is 5."
-                    .. " The row already has two blocks and each of the other digits.",
-                retry = "There are already two blocks, and the digits 1–4.",
+                cell = 11, axis = "row", title = "Digits and blocks",
+                instruction = "In this 7×7 puzzle each row and column needs two blocks and the digits 1–5 once each. Row 2 has all five digits and one block. Fill D2 with its second block.",
+                retry = "Row 2 already has 1, 2, 3, 4 and 5. Tap the solid-square key to add the other block.",
+                explanation = "Exactly. Blocks separate the runs of digits. Plus gives a separate sum for each uninterrupted run.",
             },
             {
-                prompt = "Each uninterrupted run of digits has its own sum."
-                    .. " Read rows left to right; columns top to bottom."
-                    .. "\n\n1   2   ■   3   ■   4   5\n\nWhich clues match, in order?",
-                choices = { "3 · 3 · 9", "9 · 3 · 3", "15" },
-                answer = "3 · 3 · 9",
-                explanation = "The runs are 1 + 2, then 3, then 4 + 5."
-                    .. " Their clues are 3 · 3 · 9, in that order.",
-                retry = "Blocks split the runs. Keep the sums in reading order.",
+                cell = 2, axis = "row", title = "The first run",
+                instruction = "Read row 1's clues left to right: 3 · 3 · 9. The FIRST run is 1 and B1, before the first block. Fill B1 so this run adds to the first clue, 3.",
+                retry = "The first run ends at C1's block. Add 1 and the value in B1 to make 3.",
+                explanation = "Yes: 1 + 2 = 3. The next run is just the digit 3, matching the middle clue. Keep the clues in reading order.",
             },
             {
-                prompt = "Runs touching an edge count too."
-                    .. "\n\n■   1   2   ■   3   4   5\n\nWhich clues match this row?",
-                choices = { "3", "3 · 12", "0 · 3 · 12" },
-                answer = "3 · 12",
-                explanation = "1 + 2 = 3 and 3 + 4 + 5 = 12. The run at the right edge counts."
-                    .. " A block at the left edge adds no clue.",
-                retry = "Count both runs of digits, including the one at the edge.",
+                cell = 7, axis = "row", title = "The last run",
+                instruction = "Now look at row 1's LAST clue, 9. After the second block, its last run is 4 and G1. Fill G1 so that run adds to 9.",
+                retry = "Use the last clue for the last run: 4 plus the missing digit must be 9.",
+                explanation = "Correct: 4 + 5 = 9. Row 1 now has runs 1 + 2, then 3, then 4 + 5: clues 3 · 3 · 9.",
             },
             {
-                prompt = "Touching blocks do not create an extra run."
-                    .. "\n\n■   ■   2   1   5   4   3\n\nWhich clues match this row?",
-                choices = { "0 · 15", "15", "0 · 0 · 15" },
-                answer = "15",
-                explanation = "All five digits form one run: 2 + 1 + 5 + 4 + 3 = 15."
-                    .. " There are no zero clues for empty gaps."
-                    .. " Larger Plus sizes can use more blocks and digits.",
-                retry = "Only runs containing digits get a clue.",
+                cell = 18, axis = "row", title = "Runs at an edge count",
+                instruction = "Row 3's clues are 12 · 3. Its first run starts at the left edge: 4 + 5 + 1 + D3. Fill D3 to reach 12. A run needs no block at the outer edge.",
+                retry = "The first three digits total 10. Add the missing digit to reach the first clue, 12.",
+                explanation = "Right: 4 + 5 + 1 + 2 = 12. The other run is 3. The block at the far right adds no extra clue.",
+            },
+            {
+                cell = 29, axis = "col", title = "Touching blocks",
+                instruction = "Column A has all five digits and one block at A4. Fill A5 with its other block. Read the column's clues downward: 10 · 5. Empty gaps never get a clue.",
+                retry = "Column A has 1, 5, 4, a block, an empty square, 3 and 2. It needs a second block.",
+                explanation = "The blocks touch. The runs are 1 + 5 + 4 = 10 and 3 + 2 = 5. There is no zero clue for the empty gap.",
+            },
+            {
+                cell = 44, axis = "row", title = "Separate the runs",
+                instruction = "Row 7 has clues 2 · 3 · 10. Its first two runs must be the single digits 2 and 3. Fill B7 to separate them, before the existing block at D7.",
+                retry = "A block splits the 2 and the 3 into separate runs. All five digits are already in this row.",
+                explanation = "Yes: the blocks make runs 2, then 3, then 4 + 5 + 1. These match the clues 2 · 3 · 10.",
+            },
+            {
+                cell = 40, axis = "col", title = "Finish down a column",
+                instruction = "Column E has clues 3 · 12. Below its second block, the last run is 2 + 5 + E6 + 4. Fill E6 so the run adds to 12 and completes your puzzle.",
+                retry = "The known digits in this last run total 11. Which digit brings that to 12?",
+                explanation = "You did it: 2 + 5 + 1 + 4 = 12. Every row and column now matches its runs, in order. Larger Plus boards can have more blocks and digits.",
             },
         },
     },
@@ -83,127 +113,88 @@ local lessons = {
 local Practice = {}
 Practice.__index = Practice
 
-function Practice:new(screen, kind)
-    return setmetatable({ screen = screen, lesson = lessons[kind] }, self)
+function Tutorial.new(kind)
+    local lesson = assert(lessons[kind], "Unknown tutorial variant")
+    local practice = setmetatable({ kind = kind, lesson = lesson }, Practice)
+    practice:restart()
+    return practice
 end
 
-function Practice:navigation(step)
-    return {
-        {
-            "Back",
-            function()
-                if step == 1 then
-                    Tutorial.show(self.screen)
-                    return
-                end
-                self:showExercise(step - 1)
-            end,
-        },
-        { "Back to puzzle" },
-    }
-end
-
-function Practice:showExercise(step, feedback)
-    local exercise = self.lesson.exercises[step]
-    local title = ("%s · Practice %d/%d\n\n%s"):format(
-        self.lesson.name,
-        step,
-        #self.lesson.exercises,
-        exercise.prompt
-    )
-    if feedback then
-        title = title .. "\n\nNot quite. " .. exercise.retry
+function Practice:restart()
+    local size = self.kind == "classic" and 5 or 7
+    local givens = Model.copy(self.lesson.solution)
+    for _, step in ipairs(self.lesson.steps) do
+        givens[step.cell] = -1
     end
+    local puzzle = Model.puzzle(Model.config(self.kind, size), self.lesson.solution, givens)
+    puzzle.level = "Easy"
+    self.game = Game.new(puzzle)
+    self.step = 1
+    self.complete = false
+    self:beginStep()
+end
 
-    local answers = {}
-    for _, choice in ipairs(exercise.choices) do
-        answers[#answers + 1] = {
-            choice,
-            function()
-                if choice ~= exercise.answer then
-                    self:showExercise(step, true)
-                    return
-                end
-                self:showAnswer(step)
-            end,
-        }
+function Practice:current()
+    return self.lesson.steps[self.step]
+end
+
+function Practice:beginStep()
+    self.game.selected = self:current().cell
+    self.accepted = false
+    self.feedback = nil
+end
+
+function Practice:input(value)
+    if self.complete or self.accepted then
+        return false
     end
-
-    self.screen:choose(title, { answers, self:navigation(step) })
+    local cell = self:current().cell
+    if value ~= self.game.p.solution[cell] then
+        self.feedback = "Try again. " .. self:current().retry
+        return false
+    end
+    self.game:edit(cell, value, false)
+    self.accepted = true
+    self.feedback = self:current().explanation
+    return true
 end
 
-function Practice:showAnswer(step)
-    local exercise = self.lesson.exercises[step]
-    local isLastExercise = step == #self.lesson.exercises
-    local title = ("%s · Correct!\n\n%s"):format(self.lesson.name, exercise.explanation)
-
-    self.screen:choose(title, {
-        {
-            {
-                "Try again",
-                function()
-                    self:showExercise(step)
-                end,
-            },
-            {
-                isLastExercise and "Controls" or "Next",
-                function()
-                    if isLastExercise then
-                        self:showControls()
-                        return
-                    end
-                    self:showExercise(step + 1)
-                end,
-            },
-        },
-        { { "Back to puzzle" } },
-    })
+function Practice:advance()
+    if not self.accepted or self.complete then
+        return false
+    end
+    if self.step == #self.lesson.steps then
+        self.complete = true
+        return true
+    end
+    self.step = self.step + 1
+    self:beginStep()
+    return true
 end
 
-function Practice:showControls()
-    local title = self.lesson.name
-        .. " · Practice complete\n\n"
-        .. "Rows AND columns must obey the rules.\n\n"
-        .. "Tap a cell, then a digit or ■.\n"
-        .. "Pencil toggles candidates; Erase clears.\n"
-        .. "Hold a cell for the larger keypad.\n"
-        .. "A dotted cell is fixed. Undo takes a move back.\n"
-        .. "Use Check or Hint when you need help."
-
-    self.screen:choose(title, {
-        {
-            {
-                "Practice again",
-                function()
-                    self:showExercise(1)
-                end,
-            },
-            {
-                "Other game",
-                function()
-                    Tutorial.show(self.screen)
-                end,
-            },
-        },
-        { { "Back to puzzle" } },
-    })
+function Practice:back()
+    if self.complete then
+        self.complete = false
+        return
+    end
+    local previousStep = math.max(1, self.step - 1)
+    -- Rebuild only this disposable exercise; saved games are never involved.
+    self:restart()
+    while self.step < previousStep do
+        self:input(self.game.p.solution[self:current().cell])
+        self:advance()
+    end
 end
 
 function Tutorial.show(screen)
-    screen:choose("How to play\n\nChoose a guided practice. Your puzzle stays as it is.", {
+    screen:choose("How to play\n\nFill a real practice puzzle, one guided step at a time. Your own puzzle stays as it is.", {
         {
-            {
-                "Doplo",
-                function()
-                    Practice:new(screen, "classic"):showExercise(1)
-                end,
-            },
-            {
-                "Doplo Plus",
-                function()
-                    Practice:new(screen, "plus"):showExercise(1)
-                end,
-            },
+            { "Doplo", function()
+                require("doplo/tutorial_screen").show(screen, Tutorial.new("classic"))
+            end },
+            { "Doplo Plus", function()
+                require("doplo/tutorial_screen").show(screen, Tutorial.new("plus"))
+            end },
         },
         { { "Back to puzzle" } },
     })
